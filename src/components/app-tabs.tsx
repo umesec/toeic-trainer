@@ -13,16 +13,36 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>ホーム</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
+          sf="house.fill"
           src={require('@/assets/images/tabIcons/home.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="flashcards">
+        <NativeTabs.Trigger.Label>単語</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
+          sf="character.book.closed.fill"
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="quiz">
+        <NativeTabs.Trigger.Label>クイズ</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="checkmark.circle.fill"
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="listening">
+        <NativeTabs.Trigger.Label>リスニング</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="headphones"
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />

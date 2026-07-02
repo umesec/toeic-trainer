@@ -62,4 +62,6 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+/** Webではタブバーが画面上部に浮くため、その分のコンテンツ上余白 */
+export const TopContentInset = Platform.select({ web: 84, default: 8 }) ?? 8;
 export const MaxContentWidth = 800;

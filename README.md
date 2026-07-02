@@ -1,56 +1,72 @@
-# Welcome to your Expo app 👋
+# 📘 TOEIC トレーナー
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+TOEIC 対策のための英語学習アプリ。**Expo / React Native**（TypeScript）製で、開発中はブラウザで動かしつつ、同じコードをそのまま iOS アプリとして展開できます。
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## 起動方法
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **ブラウザで確認**: 起動後にターミナルで `w` を押す（http://localhost:8081）
+- **iPhone 実機で確認**: App Store から [Expo Go](https://expo.dev/go) を入れ、ターミナルの QR コードを読み取る（PC と同一 Wi-Fi 必須）
+- **App Store 配布**: 将来的には [EAS Build](https://docs.expo.dev/build/introduction/) でビルド
 
-### Other setup steps
+## 機能
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### 🎯 学習プラン（ホーム）
+目標スコア・現在スコア・試験日を設定すると、学習プログラムを自動生成します。
 
-## Learn more
+- 期間を **語彙固め期 → 演習期 → 直前総仕上げ期** の3フェーズに分割
+- 目標との差分と残り日数から学習強度を算出し、**「今日のメニュー」**（単語◯枚・クイズ◯問・リスニング◯回、目安時間つき）を毎日提示
+- 各タブでの学習が自動でメニューの消化状況に反映される
 
-To learn more about developing your project with Expo, look at the following resources:
+### 📚 単語フラッシュカード
+- TOEIC 頻出単語 **150語** 収録（品詞・訳・例文・例文訳つき、音声再生対応）
+- **間隔反復（SRS、SM-2簡易版）**: 「もう一度／難しい／普通／簡単」の自己評価で次回出題日が決まる
+- 自分の単語を追加できる単語帳機能
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 📝 文法・語彙クイズ
+- TOEIC Part 5 形式の4択問題 **40問**（品詞／時制／前置詞／語彙）
+- 回答直後に解説と訳を表示
+- 間違えた問題は記録され、次回セッションで優先的に再出題
 
-## Join the community
+### 🎧 リスニング：音声変化（コア機能）
+「知っている単語なのに聞き取れない」原因になる英語特有の音声変化を、実例と音声つきで学べます。
 
-Join our community of developers creating universal apps.
+- 収録ルール: **フラップT／脱落（Elision）／連結（Linking）／同化（Assimilation）／弱形**
+- 各ルールに実例フレーズ 8〜9 個。「文字通りの発音」と「実際の音」をカナで対比表示し、変化箇所をハイライト
+- 🔊 通常速度／🐢 ゆっくり の2段階再生
+- **ディクテーション練習**: 音声変化を含む文を聞いて書き取り、答え合わせで変化箇所の解説を表示
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 進捗管理
+- 連続学習日数（ストリーク）、クイズ累計正答率、復習待ちカード数
+- すべてローカル保存（AsyncStorage）。アカウント不要・オフライン動作
+
+## 開発
+
+```bash
+npm run typecheck   # TypeScript 型チェック
+npm test            # ユニットテスト（SRS・学習プラン生成ロジック、Node組み込みランナー）
+npm run lint        # ESLint
+```
+
+## 構成
+
+```
+src/
+├── app/               # 画面（expo-router）
+│   ├── index.tsx      # ホーム: 学習プラン・今日のメニュー・進捗
+│   ├── flashcards.tsx # 単語カード（SRS）
+│   ├── quiz.tsx       # Part 5 形式クイズ
+│   └── listening/     # 音声変化カタログ・詳細・ディクテーション
+├── data/              # 学習データ（単語・クイズ・音声変化）
+├── lib/               # ロジック（srs / plan / storage / speech）
+└── components/        # UI部品
+```
+
+## 制約
+
+- 音声は TTS（OS の読み上げ）のため、音声変化の再現度は OS 音声品質に依存します。データ構造に `audioUrl` を持たせてあり、将来ネイティブ録音音声へ差し替え可能です
+- 学習プランの「今日のメニュー」は目安であり、スコア保証をするものではありません

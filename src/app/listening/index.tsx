@@ -1,0 +1,90 @@
+import { useRouter } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Card } from '@/components/ui';
+import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { SOUND_CHANGE_RULES } from '@/data/soundChanges';
+
+export default function ListeningIndexScreen() {
+  const router = useRouter();
+
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ThemedText type="subtitle">リスニング：音声変化</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            「知っている単語なのに聞き取れない」原因の多くは、英語特有の音声変化です。各ルールを実例の音声つきで確認しましょう。
+          </ThemedText>
+
+          {SOUND_CHANGE_RULES.map((rule) => (
+            <Pressable
+              key={rule.id}
+              onPress={() => router.push(`/listening/${rule.id}`)}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <Card>
+                <View style={styles.cardHeader}>
+                  <ThemedText type="smallBold">
+                    {rule.name}
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {'  '}
+                      {rule.nameEn}
+                    </ThemedText>
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    実例 {rule.examples.length}
+                  </ThemedText>
+                </View>
+                <ThemedText type="small">{rule.summary}</ThemedText>
+              </Card>
+            </Pressable>
+          ))}
+
+          <Pressable
+            onPress={() => router.push('/listening/dictation')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <Card style={styles.dictationCard}>
+              <ThemedText type="smallBold">✍️ ディクテーション練習</ThemedText>
+              <ThemedText type="small">
+                音声変化を含む文を聞いて書き取り、どこで音が変化したかを答え合わせで確認します。
+              </ThemedText>
+            </Card>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  safeArea: {
+    flex: 1,
+    maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.four,
+  },
+  scroll: {
+    paddingTop: TopContentInset,
+    paddingBottom: BottomTabInset + Spacing.four,
+    gap: Spacing.three,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dictationCard: {
+    borderWidth: 1.5,
+    borderColor: '#3c87f7',
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+});
