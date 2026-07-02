@@ -47,6 +47,19 @@ export interface SoundChangeRule {
   examples: SoundChangeExample[];
 }
 
+/** TOEIC Part 2 形式の応答問題 */
+export interface Part2Item {
+  id: string;
+  /** 音声で流す質問・発言 */
+  question: string;
+  questionJa: string;
+  /** 応答の選択肢（音声で流す） */
+  choices: [string, string, string];
+  /** 正解の choices インデックス */
+  answer: number;
+  explanation: string;
+}
+
 export interface DictationItem {
   id: string;
   sentence: string;

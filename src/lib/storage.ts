@@ -11,6 +11,8 @@ const KEYS = {
   streak: 'streak.v1',
   plan: 'plan.v1',
   dailyLog: 'daily.log.v1',
+  tagStats: 'quiz.tagStats.v1',
+  mockHistory: 'mock.history.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {
@@ -50,6 +52,40 @@ export const saveQuizStats = (s: QuizStats) => setJSON(KEYS.quizStats, s);
 /** 間違えた問題ID（優先的に再出題する） */
 export const loadWrongIds = () => getJSON<string[]>(KEYS.quizWrong, []);
 export const saveWrongIds = (ids: string[]) => setJSON(KEYS.quizWrong, ids);
+
+/* ---------- 分野別成績（弱点分析） ---------- */
+
+export type TagStatsMap = Record<string, { answered: number; correct: number }>;
+
+export const loadTagStats = () => getJSON<TagStatsMap>(KEYS.tagStats, {});
+
+export async function recordTagAnswer(tag: string, correct: boolean): Promise<TagStatsMap> {
+  const map = await loadTagStats();
+  const entry = map[tag] ?? { answered: 0, correct: 0 };
+  entry.answered += 1;
+  if (correct) entry.correct += 1;
+  map[tag] = entry;
+  await setJSON(KEYS.tagStats, map);
+  return map;
+}
+
+/* ---------- ミニ模試の履歴 ---------- */
+
+export interface MockResult {
+  date: string;
+  listening: number;
+  listeningTotal: number;
+  reading: number;
+  readingTotal: number;
+}
+
+export const loadMockHistory = () => getJSON<MockResult[]>(KEYS.mockHistory, []);
+
+export async function addMockResult(result: MockResult): Promise<void> {
+  const history = await loadMockHistory();
+  history.push(result);
+  await setJSON(KEYS.mockHistory, history.slice(-20));
+}
 
 /* ---------- ユーザー追加単語 ---------- */
 

@@ -126,6 +126,10 @@ export default function HomeScreen() {
             <AppButton label="🎧 音声変化" onPress={() => router.push('/listening')} style={styles.quickButton} />
             <AppButton label="✍️ ディクテーション" onPress={() => router.push('/listening/dictation')} style={styles.quickButton} />
           </View>
+          <View style={styles.quickRow}>
+            <AppButton label="🎙️ Part 2 応答問題" onPress={() => router.push('/listening/part2')} style={styles.quickButton} />
+            <AppButton label="⏱ ミニ模試" onPress={() => router.push('/quiz/mock')} style={styles.quickButton} />
+          </View>
         </ScrollView>
       </SafeAreaView>
 

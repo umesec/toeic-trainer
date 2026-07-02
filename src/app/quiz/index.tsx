@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,10 +13,13 @@ import { todayStr } from '@/lib/srs';
 import {
   bumpDaily,
   loadQuizStats,
+  loadTagStats,
   loadWrongIds,
   recordStudy,
+  recordTagAnswer,
   saveQuizStats,
   saveWrongIds,
+  type TagStatsMap,
 } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
@@ -26,6 +30,7 @@ type TagFilter = (typeof TAGS)[number];
 type Phase = 'setup' | 'playing' | 'result';
 
 export default function QuizScreen() {
+  const router = useRouter();
   const today = todayStr();
   const [phase, setPhase] = useState<Phase>('setup');
   const [tag, setTag] = useState<TagFilter>('全部');
@@ -34,6 +39,12 @@ export default function QuizScreen() {
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [wrongIds, setWrongIds] = useState<Set<string>>(new Set());
+  const [tagStats, setTagStats] = useState<TagStatsMap>({});
+
+  // 設定画面に戻るたびに弱点分析を最新化
+  useEffect(() => {
+    if (phase === 'setup') loadTagStats().then(setTagStats);
+  }, [phase]);
 
   const start = async () => {
     const pool = tag === '全部' ? QUIZZES : QUIZZES.filter((q) => q.tag === (tag as QuizTag));
@@ -64,6 +75,7 @@ export default function QuizScreen() {
       else next.add(question.id);
       return next;
     });
+    recordTagAnswer(question.tag, correct);
     bumpDaily(today, 'quiz');
     recordStudy(today);
   };
@@ -98,6 +110,16 @@ export default function QuizScreen() {
                 ))}
               </View>
               <AppButton label={`スタート（${SESSION_SIZE}問）`} onPress={start} />
+
+              <WeaknessCard tagStats={tagStats} />
+
+              <Card style={styles.mockCard}>
+                <ThemedText type="smallBold">⏱ ミニ模試</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  制限時間10分で Part 2（リスニング）5問 + Part 5（文法・語彙）10問。本番同様、回答中に正誤は表示されません。
+                </ThemedText>
+                <AppButton label="ミニ模試を受ける" variant="ghost" onPress={() => router.push('/quiz/mock')} />
+              </Card>
             </>
           )}
 
@@ -182,11 +204,52 @@ export default function QuizScreen() {
   );
 }
 
+/** 分野別の累計正答率と最弱分野を表示する */
+function WeaknessCard({ tagStats }: { tagStats: TagStatsMap }) {
+  const rows = TAGS.filter((t) => t !== '全部')
+    .map((t) => ({ tag: t, stats: tagStats[t] }))
+    .filter((r) => r.stats && r.stats.answered > 0)
+    .map((r) => ({ tag: r.tag, rate: Math.round((r.stats!.correct / r.stats!.answered) * 100), answered: r.stats!.answered }));
+
+  if (rows.length === 0) return null;
+  const weakest = rows.reduce((a, b) => (b.rate < a.rate ? b : a));
+
+  return (
+    <Card>
+      <ThemedText type="smallBold">📊 弱点分析（累計）</ThemedText>
+      {rows.map((r) => (
+        <View key={r.tag} style={styles.weakRow}>
+          <ThemedText type="small">{r.tag}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {r.rate}%（{r.answered}問）
+          </ThemedText>
+        </View>
+      ))}
+      {rows.length >= 2 && (
+        <ThemedText type="small" style={styles.weakHint}>
+          💡 「{weakest.tag}」が最も苦手です。分野を絞って集中的に解きましょう。
+        </ThemedText>
+      )}
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  mockCard: {
+    borderWidth: 1.5,
+    borderColor: '#3c87f7',
+  },
+  weakRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  weakHint: {
+    color: '#e08b1e',
   },
   safeArea: {
     flex: 1,

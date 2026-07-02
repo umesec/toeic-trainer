@@ -53,6 +53,17 @@ export default function ListeningIndexScreen() {
               </ThemedText>
             </Card>
           </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/listening/part2')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <Card style={styles.dictationCard}>
+              <ThemedText type="smallBold">🎙️ Part 2 応答問題</ThemedText>
+              <ThemedText type="small">
+                本番のPart 2形式。質問と応答(A)(B)(C)を耳だけで聞き、最も適切な応答を選ぶ練習です。
+              </ThemedText>
+            </Card>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
