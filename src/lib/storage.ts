@@ -13,6 +13,8 @@ const KEYS = {
   dailyLog: 'daily.log.v1',
   tagStats: 'quiz.tagStats.v1',
   mockHistory: 'mock.history.v1',
+  mistakes: 'mistakes.v1',
+  settings: 'settings.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {
@@ -161,4 +163,112 @@ export async function bumpDaily(today: string, field: keyof DayLog, n = 1): Prom
   map[today] = day;
   await setJSON(KEYS.dailyLog, map);
   return day;
+}
+
+/** 統計グラフ用に全日分のログを返す */
+export const loadDailyLogMap = () => getJSON<DailyLogMap>(KEYS.dailyLog, {});
+
+/* ---------- 間違いノート ---------- */
+
+export type MistakeKind = 'part2' | 'part34' | 'part5' | 'part6' | 'part7';
+
+export interface MistakeEntry {
+  /** 問題の一意ID。セット問題は `${setId}:${questionIndex}` 形式 */
+  id: string;
+  kind: MistakeKind;
+  addedAt: string;
+  wrongCount: number;
+}
+
+export const loadMistakes = () => getJSON<MistakeEntry[]>(KEYS.mistakes, []);
+
+export async function recordMistake(kind: MistakeKind, id: string, today: string): Promise<void> {
+  const list = await loadMistakes();
+  const existing = list.find((m) => m.id === id && m.kind === kind);
+  if (existing) {
+    existing.wrongCount += 1;
+  } else {
+    list.push({ id, kind, addedAt: today, wrongCount: 1 });
+  }
+  await setJSON(KEYS.mistakes, list);
+}
+
+export async function removeMistake(kind: MistakeKind, id: string): Promise<MistakeEntry[]> {
+  const list = (await loadMistakes()).filter((m) => !(m.id === id && m.kind === kind));
+  await setJSON(KEYS.mistakes, list);
+  return list;
+}
+
+export async function clearMistakes(): Promise<void> {
+  await setJSON(KEYS.mistakes, []);
+}
+
+/* ---------- 設定 ---------- */
+
+export interface AppSettings {
+  /** 読み上げ速度の倍率（0.8 / 1.0 / 1.2） */
+  speechRateScale: number;
+}
+
+const DEFAULT_SETTINGS: AppSettings = { speechRateScale: 1.0 };
+
+export const loadSettings = async (): Promise<AppSettings> => ({
+  ...DEFAULT_SETTINGS,
+  ...(await getJSON<Partial<AppSettings>>(KEYS.settings, {})),
+});
+
+export const saveSettings = (s: AppSettings) => setJSON(KEYS.settings, s);
+
+/* ---------- バックアップ（エクスポート/インポート/リセット） ---------- */
+
+const ALL_KEYS = Object.values(KEYS);
+
+export async function exportAll(): Promise<string> {
+  const data: Record<string, string> = {};
+  for (const key of ALL_KEYS) {
+    try {
+      const raw = await AsyncStorage.getItem(key);
+      if (raw !== null) data[key] = raw;
+    } catch {
+      // 読めないキーはスキップ
+    }
+  }
+  return JSON.stringify({ app: 'toeic-trainer', version: 1, data });
+}
+
+/** エクスポートJSONを取り込む。形式が不正なら false */
+export async function importAll(json: string): Promise<boolean> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    return false;
+  }
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    (parsed as { app?: string }).app !== 'toeic-trainer' ||
+    typeof (parsed as { data?: unknown }).data !== 'object'
+  ) {
+    return false;
+  }
+  const data = (parsed as { data: Record<string, string> }).data;
+  for (const key of ALL_KEYS) {
+    if (typeof data[key] === 'string') {
+      try {
+        await AsyncStorage.setItem(key, data[key]);
+      } catch {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+export async function resetAll(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove(ALL_KEYS);
+  } catch {
+    // 失敗しても致命的でない
+  }
 }

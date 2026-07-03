@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { PART6_SETS } from '@/data/part6';
 import type { Part6Set } from '@/data/types';
+import { setQuestionId } from '@/lib/mistakes';
 
 export default function Part6Screen() {
   const router = useRouter();
@@ -31,6 +32,8 @@ export default function Part6Screen() {
               docType={current.docType}
               passage={current.passage}
               passageJa={current.passageJa}
+              mistakeKind="part6"
+              mistakeIds={current.blanks.map((_, i) => setQuestionId(current.id, i))}
               questions={current.blanks.map((b) => ({
                 label: `空所 [${b.no}]`,
                 choices: b.choices,

@@ -13,6 +13,7 @@ import { PART6_SETS } from '@/data/part6';
 import { PART7_SETS } from '@/data/part7';
 import { QUIZZES } from '@/data/quizzes';
 import type { ListeningSet, Part2Item, Part6Set, Part7Set, QuizQuestion } from '@/data/types';
+import { setQuestionId } from '@/lib/mistakes';
 import { estimateScore } from '@/lib/score';
 import { pitchForSpeaker, speak, speakLines, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
@@ -20,6 +21,7 @@ import {
   addMockResult,
   bumpDaily,
   loadMockHistory,
+  recordMistake,
   recordStudy,
   recordTagAnswer,
   type MockResult,
@@ -146,9 +148,35 @@ export default function MockTestScreen() {
     const a = answersRef.current;
     const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, a);
     const today = todayStr();
-    // recordTagAnswer は read-modify-write のため直列に実行する
+    // recordTagAnswer / recordMistake は read-modify-write のため直列に実行する
     for (let i = 0; i < plan.part5.length; i++) {
-      await recordTagAnswer(plan.part5[i].tag, a.p5[i] === plan.part5[i].answer);
+      const correct = a.p5[i] === plan.part5[i].answer;
+      await recordTagAnswer(plan.part5[i].tag, correct);
+      if (!correct) await recordMistake('part5', plan.part5[i].id, today);
+    }
+    for (let i = 0; i < plan.part2.length; i++) {
+      if (a.p2[i] !== plan.part2[i].answer) await recordMistake('part2', plan.part2[i].id, today);
+    }
+    for (let si = 0; si < plan.part34.length; si++) {
+      for (let qi = 0; qi < plan.part34[si].questions.length; qi++) {
+        if (a.p34[si][qi] !== plan.part34[si].questions[qi].answer) {
+          await recordMistake('part34', setQuestionId(plan.part34[si].id, qi), today);
+        }
+      }
+    }
+    for (let si = 0; si < plan.part6.length; si++) {
+      for (let bi = 0; bi < plan.part6[si].blanks.length; bi++) {
+        if (a.p6[si][bi] !== plan.part6[si].blanks[bi].answer) {
+          await recordMistake('part6', setQuestionId(plan.part6[si].id, bi), today);
+        }
+      }
+    }
+    for (let si = 0; si < plan.part7.length; si++) {
+      for (let qi = 0; qi < plan.part7[si].questions.length; qi++) {
+        if (a.p7[si][qi] !== plan.part7[si].questions[qi].answer) {
+          await recordMistake('part7', setQuestionId(plan.part7[si].id, qi), today);
+        }
+      }
     }
     await bumpDaily(today, 'listening', listeningTotal);
     await bumpDaily(today, 'quiz', readingTotal);

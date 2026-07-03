@@ -6,7 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordStudy } from '@/lib/storage';
+import { bumpDaily, recordMistake, recordStudy, type MistakeKind } from '@/lib/storage';
 
 export interface PassageQuestion {
   label: string;
@@ -24,11 +24,17 @@ export function PassagePractice({
   passage,
   passageJa,
   questions,
+  mistakeKind,
+  mistakeIds,
 }: {
   docType: string;
   passage: string;
   passageJa: string;
   questions: PassageQuestion[];
+  /** 誤答を間違いノートに記録する場合に指定 */
+  mistakeKind?: MistakeKind;
+  /** questions と同じ並びの問題ID */
+  mistakeIds?: string[];
 }) {
   const [answers, setAnswers] = useState<(number | null)[]>(Array(questions.length).fill(null));
   const [showJa, setShowJa] = useState(false);
@@ -71,6 +77,9 @@ export function PassagePractice({
                     const next = [...answers];
                     next[qi] = ci;
                     setAnswers(next);
+                    if (ci !== q.answer && mistakeKind && mistakeIds?.[qi]) {
+                      recordMistake(mistakeKind, mistakeIds[qi], todayStr());
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.choice,

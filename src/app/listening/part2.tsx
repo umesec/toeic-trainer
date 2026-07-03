@@ -10,7 +10,7 @@ import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/con
 import { PART2_ITEMS } from '@/data/part2';
 import { speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordStudy } from '@/lib/storage';
+import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
 const LABELS = ['A', 'B', 'C'] as const;
@@ -38,6 +38,7 @@ export default function Part2Screen() {
     setAnswered((n) => n + 1);
     if (i === item.answer) setScore((s) => s + 1);
     const today = todayStr();
+    if (i !== item.answer) recordMistake('part2', item.id, today);
     bumpDaily(today, 'listening');
     recordStudy(today);
   };

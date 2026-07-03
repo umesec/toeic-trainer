@@ -3,11 +3,14 @@ import { useCallback, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BarChart, type BarDatum } from '@/components/bar-chart';
+import { SettingsModal } from '@/components/settings-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { WORDS } from '@/data/words';
+import { setSpeechRateScale } from '@/lib/speech';
 import {
   buildPhases,
   currentPhase,
@@ -21,10 +24,14 @@ import { addDays, isDue, todayStr } from '@/lib/srs';
 import {
   clearPlan,
   loadCustomWords,
+  loadDailyLogMap,
   loadDayLog,
+  loadMistakes,
+  loadMockHistory,
   loadPlan,
   loadProgress,
   loadQuizStats,
+  loadSettings,
   loadStreak,
   savePlan,
   type DayLog,
@@ -41,22 +48,54 @@ export default function HomeScreen() {
   const [quizStats, setQuizStats] = useState<QuizStats>({ answered: 0, correct: 0 });
   const [dueCount, setDueCount] = useState(0);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [dailyChart, setDailyChart] = useState<BarDatum[]>([]);
+  const [scoreChart, setScoreChart] = useState<BarDatum[]>([]);
+  const [mistakeCount, setMistakeCount] = useState(0);
 
   const reload = useCallback(async () => {
-    const [p, log, streak, stats, progress, customWords] = await Promise.all([
-      loadPlan(),
-      loadDayLog(today),
-      loadStreak(),
-      loadQuizStats(),
-      loadProgress(),
-      loadCustomWords(),
-    ]);
+    const [p, log, streak, stats, progress, customWords, logMap, mockHistory, mistakes, settings] =
+      await Promise.all([
+        loadPlan(),
+        loadDayLog(today),
+        loadStreak(),
+        loadQuizStats(),
+        loadProgress(),
+        loadCustomWords(),
+        loadDailyLogMap(),
+        loadMockHistory(),
+        loadMistakes(),
+        loadSettings(),
+      ]);
     setPlan(p);
     setDayLog(log);
     setStreakCount(streak.count);
     setQuizStats(stats);
     const wordIds = [...WORDS.map((w) => w.id), ...customWords.map((c) => c.id)];
     setDueCount(wordIds.filter((id) => progress[id] && isDue(progress[id], today)).length);
+    setMistakeCount(mistakes.length);
+    // 設定の読み上げ速度をTTSに反映（アプリ起動時の初期化を兼ねる）
+    setSpeechRateScale(settings.speechRateScale);
+
+    // 直近14日の学習量
+    const days: BarDatum[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const date = addDays(today, -i);
+      const d = logMap[date];
+      days.push({
+        label: date.slice(5).replace('-', '/'),
+        value: d ? d.cards + d.quiz + d.listening : 0,
+      });
+    }
+    setDailyChart(days);
+
+    // 実力測定の推定スコア推移（直近10件）
+    setScoreChart(
+      mockHistory
+        .filter((h) => h.estimatedTotal !== undefined)
+        .slice(-10)
+        .map((h) => ({ label: h.date.slice(5).replace('-', '/'), value: h.estimatedTotal! }))
+    );
   }, [today]);
 
   // タブに戻ってくるたびに最新の進捗を反映
@@ -82,7 +121,12 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
+          <View style={styles.titleRow}>
+            <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
+            <Pressable onPress={() => setShowSettings(true)} style={({ pressed }) => pressed && styles.dimmed}>
+              <ThemedText type="subtitle">⚙️</ThemedText>
+            </Pressable>
+          </View>
 
           {/* 学習プラン */}
           {plan ? (
@@ -134,8 +178,54 @@ export default function HomeScreen() {
             <AppButton label="🎙️ Part 2 応答問題" onPress={() => router.push('/listening/part2')} style={styles.quickButton} />
             <AppButton label="📈 模試・実力測定" onPress={() => router.push('/quiz/mock')} style={styles.quickButton} />
           </View>
+          <View style={styles.quickRow}>
+            <AppButton
+              label={mistakeCount > 0 ? `📓 間違いノート（${mistakeCount}）` : '📓 間違いノート'}
+              onPress={() => router.push('/quiz/mistakes')}
+              style={styles.quickButton}
+            />
+            <AppButton label="🔤 単語テスト" onPress={() => router.push('/flashcards/test')} style={styles.quickButton} />
+          </View>
+
+          {/* 学習統計 */}
+          <ThemedText type="smallBold">学習統計</ThemedText>
+          <Card>
+            <ThemedText type="small" themeColor="textSecondary">
+              直近14日の学習量（回答・カード数）
+            </ThemedText>
+            {dailyChart.some((d) => d.value > 0) ? (
+              <BarChart data={dailyChart} />
+            ) : (
+              <ThemedText type="small" themeColor="textSecondary">
+                まだデータがありません。今日の学習を始めましょう！
+              </ThemedText>
+            )}
+          </Card>
+          <Card>
+            <ThemedText type="small" themeColor="textSecondary">
+              推定スコアの推移（実力測定モード）
+            </ThemedText>
+            {scoreChart.length > 0 ? (
+              <>
+                <BarChart data={scoreChart} color="#2fa96c" maxValue={990} />
+                <ThemedText type="small" themeColor="textSecondary">
+                  最新: {scoreChart[scoreChart.length - 1].value} 点（990点満点スケール）
+                </ThemedText>
+              </>
+            ) : (
+              <ThemedText type="small" themeColor="textSecondary">
+                実力測定モードを受けるとスコアの推移がここに表示されます。
+              </ThemedText>
+            )}
+          </Card>
         </ScrollView>
       </SafeAreaView>
+
+      <SettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        onDataChanged={reload}
+      />
 
       <PlanModal
         // プラン読込・変更時に再マウントして useState の初期値へ反映させる
@@ -397,6 +487,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     padding: Spacing.four,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dimmed: {
+    opacity: 0.6,
   },
   planHeader: {
     flexDirection: 'row',

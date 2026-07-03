@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { PART7_SETS } from '@/data/part7';
 import type { Part7Set } from '@/data/types';
+import { setQuestionId } from '@/lib/mistakes';
 
 export default function Part7Screen() {
   const router = useRouter();
@@ -31,6 +32,8 @@ export default function Part7Screen() {
               docType={current.docType}
               passage={current.passage}
               passageJa={current.passageJa}
+              mistakeKind="part7"
+              mistakeIds={current.questions.map((_, i) => setQuestionId(current.id, i))}
               questions={current.questions.map((q, i) => ({
                 label: `Q${i + 1}. ${q.q}`,
                 choices: q.choices,

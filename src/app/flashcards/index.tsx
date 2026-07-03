@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,6 +41,7 @@ function buildQueue(progress: ProgressMap, words: Word[], today: string): Word[]
 }
 
 export default function FlashcardsScreen() {
+  const router = useRouter();
   const today = todayStr();
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState<ProgressMap>({});
@@ -102,6 +104,11 @@ export default function FlashcardsScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           残り {queue.length} 枚 ・ 今日 {doneCount} 枚学習
         </ThemedText>
+
+        <View style={styles.navRow}>
+          <AppButton label="🔤 単語テスト" variant="ghost" onPress={() => router.push('/flashcards/test')} style={styles.navButton} />
+          <AppButton label="📖 単語一覧" variant="ghost" onPress={() => router.push('/flashcards/list')} style={styles.navButton} />
+        </View>
 
         {!ready ? null : current ? (
           <>
@@ -293,6 +300,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  navRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  navButton: {
+    flex: 1,
   },
   cardWrap: {
     flexGrow: 0,

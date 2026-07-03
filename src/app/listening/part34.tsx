@@ -9,9 +9,10 @@ import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { LISTENING_SETS } from '@/data/part34';
 import type { ListeningSet } from '@/data/types';
+import { setQuestionId } from '@/lib/mistakes';
 import { pitchForSpeaker, speakLines, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordStudy } from '@/lib/storage';
+import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
 
 export default function Part34Screen() {
   const router = useRouter();
@@ -120,6 +121,9 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
                     const next = [...answers];
                     next[qi] = ci;
                     setAnswers(next);
+                    if (ci !== q.answer) {
+                      recordMistake('part34', setQuestionId(set.id, qi), todayStr());
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.choice,

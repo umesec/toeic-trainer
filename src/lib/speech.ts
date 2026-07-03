@@ -4,11 +4,19 @@ import * as Speech from 'expo-speech';
  * 英語TTSの薄いラッパー。Web は Web Speech API、iOS は AVSpeechSynthesizer が使われる。
  * 音声変化（フラップT等）の再現度はOSの音声品質に依存する。
  */
+
+/** 設定画面で変更できる読み上げ速度の倍率（起動時に設定から反映） */
+let rateScale = 1.0;
+
+export function setSpeechRateScale(scale: number) {
+  rateScale = scale;
+}
+
 export function speak(text: string, opts: { slow?: boolean } = {}) {
   Speech.stop();
   Speech.speak(text, {
     language: 'en-US',
-    rate: opts.slow ? 0.5 : 1.0,
+    rate: (opts.slow ? 0.5 : 1.0) * rateScale,
     pitch: 1.0,
   });
 }
@@ -29,7 +37,7 @@ export interface SpeechLine {
  */
 export function speakLines(lines: SpeechLine[], opts: { slow?: boolean } = {}) {
   Speech.stop();
-  const rate = opts.slow ? 0.5 : 1.0;
+  const rate = (opts.slow ? 0.5 : 1.0) * rateScale;
   const next = (i: number) => {
     if (i >= lines.length) return;
     Speech.speak(lines[i].text, {

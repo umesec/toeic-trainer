@@ -15,6 +15,7 @@ import {
   loadQuizStats,
   loadTagStats,
   loadWrongIds,
+  recordMistake,
   recordStudy,
   recordTagAnswer,
   saveQuizStats,
@@ -76,6 +77,7 @@ export default function QuizScreen() {
       return next;
     });
     recordTagAnswer(question.tag, correct);
+    if (!correct) recordMistake('part5', question.id, today);
     bumpDaily(today, 'quiz');
     recordStudy(today);
   };
@@ -112,6 +114,14 @@ export default function QuizScreen() {
               <AppButton label={`スタート（${SESSION_SIZE}問）`} onPress={start} />
 
               <WeaknessCard tagStats={tagStats} />
+
+              <Card>
+                <ThemedText type="smallBold">📓 間違いノート</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  クイズ・練習・模試で間違えた問題が全Part横断で自動的に溜まります。解き直して正解するとノートから外れます。
+                </ThemedText>
+                <AppButton label="ノートを開く" variant="ghost" onPress={() => router.push('/quiz/mistakes')} />
+              </Card>
 
               <View style={styles.linkRow}>
                 <Card style={styles.linkCard}>
