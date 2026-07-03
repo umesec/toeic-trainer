@@ -30,7 +30,7 @@ type Mode = 'mini' | 'full';
 
 const MODE_CONFIG = {
   mini: { label: 'ミニ模試', minutes: 10, p2: 5, p34: 0, p5: 10, p6: 0, p7: 0 },
-  full: { label: '実力測定モード', minutes: 30, p2: 10, p34: 4, p5: 15, p6: 1, p7: 2 },
+  full: { label: '実力測定モード', minutes: 40, p2: 13, p34: 5, p5: 20, p6: 2, p7: 3 },
 } as const;
 
 const P2_LABELS = ['A', 'B', 'C'] as const;
@@ -193,10 +193,10 @@ export default function MockTestScreen() {
               </Card>
 
               <Card style={styles.fullCard}>
-                <ThemedText type="smallBold">📈 実力測定モード（約30分・47問）</ThemedText>
+                <ThemedText type="smallBold">📈 実力測定モード（約40分・65問）</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  L: Part 2×10問 + Part 3/4×4セット（12問){'\n'}
-                  R: Part 5×15問 + Part 6×1文書（4問）+ Part 7×2文書（6問）{'\n'}
+                  L: Part 2×13問 + Part 3/4×5セット（15問）{'\n'}
+                  R: Part 5×20問 + Part 6×2文書（8問）+ Part 7×3文書（9問）{'\n'}
                   終了後に推定スコア（10〜990点）を表示します。リスニングは自動再生されるため、音の出る環境で受験してください。
                 </ThemedText>
                 <AppButton label="実力測定をはじめる" onPress={() => start('full')} />

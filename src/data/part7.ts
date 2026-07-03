@@ -161,4 +161,85 @@ export const PART7_SETS: Part7Set[] = [
       },
     ],
   },
+  {
+    id: 'p705',
+    docType: 'チャット',
+    passage:
+      'Nina Okafor [10:12 A.M.]\nHi Tom, the projector in Room 3 isn\'t working, and my product demo for the Keller Group starts at 11.\n\nTom Reyes [10:13 A.M.]\nDid you try the spare cable in the supply cabinet?\n\nNina Okafor [10:14 A.M.]\nYes, no luck. I think it\'s the bulb.\n\nTom Reyes [10:16 A.M.]\nWe don\'t have a replacement on hand. It would take at least a day to order one. Why not move your demo to Room 7? Its projector was serviced last week.\n\nNina Okafor [10:17 A.M.]\nGood thinking. Could you update the room booking system so nobody takes it?\n\nTom Reyes [10:18 A.M.]\nAlready done. I\'ll also put a sign on Room 3 so no one else gets caught by surprise.',
+    passageJa:
+      'ニナ [10:12] トム、第3会議室のプロジェクターが動かないの。11時からケラーグループ向けの製品デモがあるのに。\nトム [10:13] 備品棚の予備ケーブルは試した？\nニナ [10:14] うん、ダメだった。電球（ランプ）だと思う。\nトム [10:16] 交換品の在庫はないよ。取り寄せに最低1日かかる。デモを第7会議室に移したら？先週プロジェクターを整備したばかりだよ。\nニナ [10:17] いい考えね。誰にも取られないように予約システムを更新してくれる？\nトム [10:18] もうやったよ。第3会議室には貼り紙もしておくね。',
+    questions: [
+      {
+        q: 'What problem does Ms. Okafor report?',
+        choices: [
+          'A meeting room is double-booked.',
+          'A piece of equipment is not working.',
+          'A client canceled a demonstration.',
+          'A supply cabinet is locked.',
+        ],
+        answer: 1,
+        explanation: '冒頭「the projector ... isn\'t working」= 機器の故障。equipment への言い換え。',
+      },
+      {
+        q: 'What does Mr. Reyes suggest?',
+        choices: [
+          'Ordering a new projector',
+          'Postponing the demonstration',
+          'Using a different room',
+          'Calling a repair service',
+        ],
+        answer: 2,
+        explanation: '「Why not move your demo to Room 7?」= 別の部屋の利用を提案。Why not〜? は提案表現。',
+      },
+      {
+        q: 'At 10:18 A.M., what does Mr. Reyes mean when he writes, "Already done"?',
+        choices: [
+          'He has repaired the projector.',
+          'He has updated the booking system.',
+          'He has ordered a replacement bulb.',
+          'He has contacted the Keller Group.',
+        ],
+        answer: 1,
+        explanation: '意図問題。直前のニナの依頼「予約システムを更新してくれる？」への返答なので、更新済みという意味。',
+      },
+    ],
+  },
+  {
+    id: 'p706',
+    docType: 'お知らせ + Eメール（ダブルパッセージ）',
+    passage:
+      '--- お知らせ ---\nWESTBROOK PUBLIC LIBRARY\nAuthor Talk Series — Spring Schedule\n\nApril 12: Mia Torres, "Gardens of the City" (travel writing)\nMay 10: Dr. Alan Reeves, "The Data Age" (science)\nJune 14: Keiko Yamada, "Quiet Harbors" (fiction)\n\nAll talks begin at 6:30 P.M. in the Community Hall. Admission is free, but seating is limited to 80 guests. Reserve your seat online. Each talk is followed by a book signing; copies will be sold at a 15% discount by Pageturner Books.\n\n--- Eメール ---\nFrom: Keiko Yamada\nTo: events@westbrooklibrary.org\nDate: June 2\nSubject: My talk\n\nDear Events Team,\n\nI am looking forward to visiting your library this month. Unfortunately, my publisher has scheduled an overseas book tour that conflicts with the original date. Would it be possible to move my talk to June 28? My presentation itself needs no changes — the slides and handouts are ready.\n\nAlso, could you tell me how many seats have been reserved so far? I would like to bring enough signed bookplates for everyone.\n\nBest regards,\nKeiko Yamada',
+    passageJa:
+      '【お知らせ】ウェストブルック公立図書館 著者トークシリーズ 春の日程\n4月12日: ミア・トレス（紀行文）／5月10日: アラン・リーブス博士（科学）／6月14日: 山田恵子（小説）\n全トークは午後6時30分にコミュニティホールで開始。入場無料・先着80席。オンラインで要予約。各トーク後にサイン会があり、ページターナー書店が本を15%引きで販売。\n\n【Eメール】差出人: 山田恵子／宛先: 図書館イベント担当／日付: 6月2日\nイベントご担当者様\n今月の貴館訪問を楽しみにしています。あいにく出版社が海外ブックツアーを入れてしまい、当初の日程と重なってしまいました。私のトークを6月28日に変更していただくことは可能でしょうか。プレゼン自体の変更は不要です（スライドと配布資料は準備済みです）。\nまた、現時点で何席予約が入っているか教えていただけますか。全員分のサイン入り蔵書票を持参したいと思います。',
+    questions: [
+      {
+        q: 'What is indicated about the Author Talk Series?',
+        choices: [
+          'Talks are held in the morning.',
+          'Attendance costs 15 dollars.',
+          'Seating is limited.',
+          'Books cannot be purchased on site.',
+        ],
+        answer: 2,
+        explanation: 'お知らせに「seating is limited to 80 guests」とある。本は会場で15%引き販売なので(B)(D)は誤り。',
+      },
+      {
+        q: 'Why did Ms. Yamada send the email?',
+        choices: [
+          'To cancel her appearance',
+          'To request a date change',
+          'To ask for a larger room',
+          'To change her presentation topic',
+        ],
+        answer: 1,
+        explanation: '「Would it be possible to move my talk to June 28?」= 日程変更の依頼。',
+      },
+      {
+        q: 'What was the original date of Ms. Yamada\'s talk?',
+        choices: ['April 12', 'May 10', 'June 14', 'June 28'],
+        answer: 2,
+        explanation: 'ダブルパッセージ問題。メールの差出人（山田恵子）をお知らせの日程表と照合すると6月14日。2文書の情報を組み合わせて解く。',
+      },
+    ],
+  },
 ];

@@ -116,4 +116,77 @@ export const PART6_SETS: Part6Set[] = [
       },
     ],
   },
+  {
+    id: 'p604',
+    docType: '求人広告',
+    passage:
+      'ADMINISTRATIVE ASSISTANT — MERIDIAN LAW GROUP\n\nMeridian Law Group is seeking a full-time administrative assistant for its downtown office. The successful candidate will manage schedules, prepare documents, and greet clients. Applicants must have at least two years of office experience and strong computer skills. [1] with legal terminology is preferred but not required. We offer a competitive salary, health insurance, and twenty days of paid vacation [2]. [3], employees receive an annual allowance for professional development courses. To apply, send your resume and a cover letter to careers@meridianlaw.com [4] May 15.',
+    passageJa:
+      '事務アシスタント募集 — メリディアン法律事務所\n\nメリディアン法律事務所では、ダウンタウンオフィスで働く常勤の事務アシスタントを募集しています。採用者はスケジュール管理、書類作成、来客対応を担当します。応募者は2年以上のオフィス勤務経験と高いPCスキルが必要です。法律用語に精通していれば尚可ですが、必須ではありません。競争力のある給与、健康保険、年20日の有給休暇を提供します。さらに、社員は専門能力開発講座のための年間手当を受け取れます。応募は5月15日までに履歴書とカバーレターを careers@meridianlaw.com へお送りください。',
+    blanks: [
+      {
+        no: 1,
+        choices: ['Familiar', 'Familiarity', 'Familiarize', 'Familiarly'],
+        answer: 1,
+        explanation: '文の主語になる名詞 Familiarity（精通）が正解。Familiarity with〜「〜に詳しいこと」。',
+      },
+      {
+        no: 2,
+        choices: ['per year', 'at once', 'so far', 'in turn'],
+        answer: 0,
+        explanation: '「年20日の有給休暇」なので per year（1年につき）。待遇欄の定番表現。',
+      },
+      {
+        no: 3,
+        choices: ['Otherwise', 'However', 'In addition', 'For instance'],
+        answer: 2,
+        explanation: '前文の待遇（給与・保険・休暇）にさらに手当を追加しているので In addition（加えて）。',
+      },
+      {
+        no: 4,
+        choices: ['by', 'until', 'at', 'since'],
+        answer: 0,
+        explanation: '応募書類の提出は1回の動作なので期限の by。until は継続する状態に使う。',
+      },
+    ],
+  },
+  {
+    id: 'p605',
+    docType: '社内メモ',
+    passage:
+      'MEMO\nTo: All Sales Staff\nFrom: Victor Huang, Sales Director\nRe: Monthly Reporting Procedure\n\nEffective immediately, all sales reports must be submitted through the new online portal [1] by email. The portal automatically checks figures for errors, [2] the review process much faster. Reports are still due on the last business day of each month. [3]. Anyone who has not yet received login information should contact the IT help desk. Thank you for your [4] cooperation during this transition.',
+    passageJa:
+      '社内メモ\n宛先: 営業部全員\n差出人: ビクター・ホァン営業部長\n件名: 月次報告の手順について\n\n本日より、すべての営業報告書はメールではなく新しいオンラインポータルから提出してください。ポータルは数値の誤りを自動チェックするため、確認作業が大幅に速くなります。提出期限は従来通り毎月の最終営業日です。締め切りに遅れると月次集計に反映されない場合があります。ログイン情報をまだ受け取っていない方はITヘルプデスクに連絡してください。移行期間中のご協力に感謝します。',
+    blanks: [
+      {
+        no: 1,
+        choices: ['because of', 'instead of', 'in case of', 'on behalf of'],
+        answer: 1,
+        explanation: '「メールではなくポータルで」という置き換えなので instead of（〜の代わりに）。',
+      },
+      {
+        no: 2,
+        choices: ['make', 'made', 'making', 'makes'],
+        answer: 2,
+        explanation: 'カンマの後で「〜し、その結果…にする」という分詞構文。making the review process faster が正解。',
+      },
+      {
+        no: 3,
+        choices: [
+          'Late submissions may not be included in the monthly summary.',
+          'The cafeteria will be closed for renovations.',
+          'Sales increased sharply in the overseas market.',
+          'The portal was designed by an outside vendor.',
+        ],
+        answer: 0,
+        explanation: '文挿入問題。直前の「締め切りは月末」を受けて「遅れると集計に含まれない」と続くのが自然。',
+      },
+      {
+        no: 4,
+        choices: ['continue', 'continued', 'continuing', 'continuation'],
+        answer: 1,
+        explanation: '名詞 cooperation を修飾する分詞。your continued cooperation「引き続きのご協力」は定型表現。',
+      },
+    ],
+  },
 ];

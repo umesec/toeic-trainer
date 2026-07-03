@@ -47,6 +47,15 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="guide">
+        <NativeTabs.Trigger.Label>ガイド</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf="book.fill"
+          src={require('@/assets/images/tabIcons/explore.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

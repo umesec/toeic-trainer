@@ -127,7 +127,7 @@ export default function QuizScreen() {
               <Card style={styles.mockCard}>
                 <ThemedText type="smallBold">⏱ 模試・実力測定</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  ミニ模試（10分・15問）と、推定スコア付きの実力測定モード（30分・47問、Part 2〜7を横断）が受けられます。
+                  ミニ模試（10分・15問）と、推定スコア付きの実力測定モード（40分・65問、Part 2〜7を横断）が受けられます。
                 </ThemedText>
                 <AppButton label="模試を受ける" variant="ghost" onPress={() => router.push('/quiz/mock')} />
               </Card>

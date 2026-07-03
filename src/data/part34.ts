@@ -258,4 +258,176 @@ export const LISTENING_SETS: ListeningSet[] = [
       },
     ],
   },
+  {
+    id: 'ls304',
+    part: 3,
+    title: 'カフェの求人',
+    script: [
+      { speaker: 'M', text: "Excuse me, I saw the help-wanted sign in your window. Are you still looking for part-time staff?" },
+      { speaker: 'W', text: "Yes, we need someone for weekend mornings, mainly to take orders and run the register. Do you have any experience in food service?" },
+      { speaker: 'M', text: 'I worked at a bakery for two years while I was in college. I also have a food handler certificate.' },
+      { speaker: 'W', text: "That's exactly what we're looking for. Could you fill out this application? The manager will be back at noon, and she can interview you today if you have time." },
+    ],
+    scriptJa:
+      '男性: すみません、窓の求人の貼り紙を見たのですが。まだアルバイトを募集していますか？\n女性: ええ、週末の午前担当を探しています。主に注文取りとレジです。飲食の経験はありますか？\n男性: 大学時代にベーカリーで2年働いていました。食品衛生の資格も持っています。\n女性: まさに探していた人材です。この応募用紙に記入していただけますか？店長が正午に戻るので、お時間があれば今日面接できますよ。',
+    questions: [
+      {
+        q: 'Why is the man visiting the café?',
+        choices: ['To apply for a job', 'To place an order', 'To make a complaint', 'To deliver supplies'],
+        answer: 0,
+        explanation: '「I saw the help-wanted sign（求人の貼り紙を見た）」= 仕事に応募するため。',
+      },
+      {
+        q: 'What does the man mention about himself?',
+        choices: [
+          'He owns a bakery.',
+          'He has food service experience.',
+          'He can only work weekdays.',
+          'He recently graduated.',
+        ],
+        answer: 1,
+        explanation: '「I worked at a bakery for two years」= 飲食の実務経験がある。',
+      },
+      {
+        q: 'What is the man asked to do?',
+        choices: ['Come back tomorrow', 'Call the manager', 'Complete a form', 'Provide references'],
+        answer: 2,
+        explanation: '「Could you fill out this application?」。fill out = complete（記入する）の言い換え。',
+      },
+    ],
+  },
+  {
+    id: 'ls305',
+    part: 3,
+    title: '出張の手配',
+    script: [
+      { speaker: 'W', text: "Daniel, I'm arranging your trip to the trade show in Chicago. Would you rather fly out Tuesday evening or Wednesday morning?" },
+      { speaker: 'M', text: "Wednesday morning, please. I have a dinner with a client on Tuesday that I can't move." },
+      { speaker: 'W', text: 'Got it. The earliest flight lands at ten, but your first appointment at the show is at nine thirty. You might miss it.' },
+      { speaker: 'M', text: "Hmm, then let's do Tuesday after the dinner. There's a late flight around ten P.M., isn't there? Book that one, and a hotel near the convention center." },
+    ],
+    scriptJa:
+      '女性: ダニエル、シカゴの展示会への出張を手配しています。火曜の夜と水曜の朝、どちらの便がいいですか？\n男性: 水曜の朝でお願い。火曜は動かせない顧客との夕食があるんだ。\n女性: 了解。ただ、最も早い便でも到着は10時で、展示会での最初のアポは9時半です。間に合わないかもしれません。\n男性: うーん、それなら夕食の後の火曜にしよう。午後10時頃の遅い便があったよね？それと、コンベンションセンター近くのホテルを予約して。',
+    questions: [
+      {
+        q: 'What is the woman helping the man with?',
+        choices: ['Preparing a presentation', 'Arranging business travel', 'Organizing a client dinner', 'Renting a car'],
+        answer: 1,
+        explanation: '「I\'m arranging your trip to the trade show」= 出張の手配。',
+      },
+      {
+        q: 'What problem does the woman point out?',
+        choices: [
+          'The hotel is fully booked.',
+          'A flight might arrive too late.',
+          'The trade show was postponed.',
+          'The budget is too small.',
+        ],
+        answer: 1,
+        explanation: '「The earliest flight lands at ten, but your first appointment is at nine thirty」= 到着がアポに間に合わない可能性。',
+      },
+      {
+        q: 'What does the man decide to do?',
+        choices: [
+          'Cancel his client dinner',
+          'Take a late flight on Tuesday',
+          'Skip the first appointment',
+          'Attend the show online',
+        ],
+        answer: 1,
+        explanation: '「let\'s do Tuesday after the dinner ... Book that one（火曜の夜遅い便にしよう）」。会話の結論は最後に来る。',
+      },
+    ],
+  },
+  {
+    id: 'ls404',
+    part: 4,
+    title: 'ラジオ広告（家具店セール）',
+    script: [
+      {
+        speaker: 'W',
+        text: "Looking to give your living room a fresh new look? This weekend only, Hartfield Furniture is holding its biggest clearance sale of the year. Everything in the store is at least thirty percent off, and selected sofas are half price. Plus, spend two hundred dollars or more and receive free delivery within the city. Our doors open at eight A.M. on Saturday, two hours earlier than usual, so come early for the best selection. Hartfield Furniture, on Route 9 next to the Cineplex.",
+      },
+    ],
+    scriptJa:
+      'ラジオ広告: リビングルームを新しく模様替えしませんか？今週末限定で、ハートフィールド家具が年間最大のクリアランスセールを開催します。全商品最低30%オフ、対象のソファは半額です。さらに200ドル以上のお買い上げで市内配送無料。土曜日は通常より2時間早い午前8時に開店しますので、品揃えが豊富なうちにお早めにどうぞ。ハートフィールド家具、9号線沿いシネコン隣。',
+    questions: [
+      {
+        q: 'What is being advertised?',
+        choices: ['A moving company', 'A furniture sale', 'A movie theater', 'A home repair service'],
+        answer: 1,
+        explanation: '「Hartfield Furniture is holding its biggest clearance sale」= 家具店のセール広告。',
+      },
+      {
+        q: 'How can customers receive free delivery?',
+        choices: [
+          'By spending at least $200',
+          'By visiting on Saturday',
+          'By joining a membership program',
+          'By paying in cash',
+        ],
+        answer: 0,
+        explanation: '「spend two hundred dollars or more and receive free delivery」= 200ドル以上の購入が条件。',
+      },
+      {
+        q: 'What does the speaker say about Saturday?',
+        choices: [
+          'The store will close early.',
+          'The store will open earlier than usual.',
+          'A new branch will open.',
+          'Parking will be unavailable.',
+        ],
+        answer: 1,
+        explanation: '「open at eight A.M. ... two hours earlier than usual」= 通常より2時間早く開店。',
+      },
+    ],
+  },
+  {
+    id: 'ls405',
+    part: 4,
+    title: '会議の冒頭スピーチ（売上報告）',
+    script: [
+      {
+        speaker: 'M',
+        text: "Good morning, everyone. Before we go over this quarter's numbers, I'd like to share some good news. Our online sales grew forty percent compared to last quarter, thanks largely to the redesigned website that launched in April. However, sales at our downtown location continue to decline, mainly because of the ongoing road construction nearby. To address this, we'll be offering in-store pickup discounts starting next month. Maria from the marketing team will now walk you through the campaign details, so please hold your questions until the end of her presentation.",
+      },
+    ],
+    scriptJa:
+      'スピーチ: おはようございます。今四半期の数字を確認する前に、良いニュースを共有します。オンライン売上は前四半期比40%増となりました。これは主に4月に公開したリニューアル版ウェブサイトのおかげです。一方、ダウンタウン店の売上は減少が続いています。主な原因は近隣で続く道路工事です。この対策として、来月から店頭受け取り割引を開始します。これからマーケティングチームのマリアがキャンペーンの詳細を説明しますので、質問は彼女のプレゼンの最後までお待ちください。',
+    questions: [
+      {
+        q: 'According to the speaker, why did online sales increase?',
+        choices: [
+          'A website was redesigned.',
+          'Prices were lowered.',
+          'A new product was released.',
+          'More staff were hired.',
+        ],
+        answer: 0,
+        explanation: '「thanks largely to the redesigned website」= リニューアルしたウェブサイトが要因。',
+      },
+      {
+        q: 'What problem does the speaker mention?',
+        choices: [
+          'A shortage of inventory',
+          'Declining sales at one location',
+          'A delayed marketing campaign',
+          'Rising shipping costs',
+        ],
+        answer: 1,
+        explanation: '「sales at our downtown location continue to decline」= ダウンタウン店の売上減少。原因は道路工事。',
+      },
+      {
+        q: 'What will happen next?',
+        choices: [
+          'A question-and-answer session will begin.',
+          'The meeting will end.',
+          'A colleague will give a presentation.',
+          'A video will be shown.',
+        ],
+        answer: 2,
+        explanation: '「Maria ... will now walk you through the campaign details」= 同僚がプレゼンする。walk through = 説明するの言い換え。',
+      },
+    ],
+  },
 ];

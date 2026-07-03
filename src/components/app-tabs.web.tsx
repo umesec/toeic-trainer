@@ -31,6 +31,9 @@ export default function AppTabs() {
           <TabTrigger name="listening" href="/listening" asChild>
             <TabButton>リスニング</TabButton>
           </TabTrigger>
+          <TabTrigger name="guide" href="/guide" asChild>
+            <TabButton>ガイド</TabButton>
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>
