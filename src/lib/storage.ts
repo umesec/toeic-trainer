@@ -188,7 +188,7 @@ export const loadDailyLogMap = () => getJSON<DailyLogMap>(KEYS.dailyLog, {});
 
 /* ---------- 間違いノート ---------- */
 
-export type MistakeKind = 'part2' | 'part34' | 'part5' | 'part6' | 'part7';
+export type MistakeKind = 'part1' | 'part2' | 'part34' | 'part5' | 'part6' | 'part7';
 
 export interface MistakeEntry {
   /** 問題の一意ID。セット問題は `${setId}:${questionIndex}` 形式 */

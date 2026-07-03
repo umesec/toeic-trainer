@@ -1,10 +1,13 @@
 import type { ListeningSet } from '@/data/types';
 
+import { PART3_EXTRA } from './part3x.ts';
+import { PART4_EXTRA } from './part4x.ts';
+
 /**
  * TOEIC Part 3（会話）/ Part 4（トーク）形式のリスニングセット。
  * script はTTSで話者ごとに読み上げる（会話は pitch を変えて聞き分けやすくする）。
  */
-export const LISTENING_SETS: ListeningSet[] = [
+const BASE_SETS: ListeningSet[] = [
   {
     id: 'ls301',
     part: 3,
@@ -431,3 +434,6 @@ export const LISTENING_SETS: ListeningSet[] = [
     ],
   },
 ];
+
+/** Part 3/4 の全セット（基本 + 追加分を結合） */
+export const LISTENING_SETS: ListeningSet[] = [...BASE_SETS, ...PART3_EXTRA, ...PART4_EXTRA];

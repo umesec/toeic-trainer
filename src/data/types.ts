@@ -47,6 +47,26 @@ export interface SoundChangeRule {
   examples: SoundChangeExample[];
 }
 
+/**
+ * TOEIC Part 1 形式の写真描写問題。
+ * 写真素材の代わりに絵文字シーン + 日本語の場面説明を表示する。
+ */
+export interface Part1Item {
+  id: string;
+  /** 写真代わりの絵文字シーン（例: '👩‍💼💻📄'） */
+  scene: string;
+  /** 場面の日本語説明（写真代わり） */
+  sceneJa: string;
+  /** 将来実写真に差し替えるためのフィールド（現状は未使用） */
+  imageUrl?: string;
+  /** 音声で流す4つの描写文 (A)〜(D) */
+  statements: [string, string, string, string];
+  statementsJa: [string, string, string, string];
+  /** 正解の statements インデックス */
+  answer: number;
+  explanation: string;
+}
+
 /** TOEIC Part 2 形式の応答問題 */
 export interface Part2Item {
   id: string;

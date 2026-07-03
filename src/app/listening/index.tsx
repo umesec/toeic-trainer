@@ -57,6 +57,17 @@ export default function ListeningIndexScreen() {
           </Pressable>
 
           <Pressable
+            onPress={() => router.push('/listening/part1')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <Card tint={features.listening.tint}>
+              <ThemedText type="smallBold">🖼️ Part 1 写真描写</ThemedText>
+              <ThemedText type="small">
+                場面（写真の代わりの絵文字+説明）に最も合う描写文を、(A)〜(D)の音声から選ぶ本番形式の練習です。
+              </ThemedText>
+            </Card>
+          </Pressable>
+
+          <Pressable
             onPress={() => router.push('/listening/part2')}
             style={({ pressed }) => pressed && styles.pressed}>
             <Card tint={features.listening.tint}>

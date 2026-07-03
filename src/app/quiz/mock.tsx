@@ -7,12 +7,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { PART1_ITEMS } from '@/data/part1';
 import { PART2_ITEMS } from '@/data/part2';
 import { LISTENING_SETS } from '@/data/part34';
 import { PART6_SETS } from '@/data/part6';
 import { PART7_SETS } from '@/data/part7';
 import { QUIZZES } from '@/data/quizzes';
-import type { ListeningSet, Part2Item, Part6Set, Part7Set, QuizQuestion } from '@/data/types';
+import type { ListeningSet, Part1Item, Part2Item, Part6Set, Part7Set, QuizQuestion } from '@/data/types';
 import { useFeatureColors, useTheme } from '@/hooks/use-theme';
 import { setQuestionId } from '@/lib/mistakes';
 import { estimateScore } from '@/lib/score';
@@ -32,14 +33,16 @@ import { shuffle } from '@/lib/util';
 type Mode = 'mini' | 'full';
 
 const MODE_CONFIG = {
-  mini: { label: 'ミニ模試', minutes: 10, p2: 5, p34: 0, p5: 10, p6: 0, p7: 0 },
-  full: { label: '実力測定モード', minutes: 40, p2: 13, p34: 5, p5: 20, p6: 2, p7: 3 },
+  mini: { label: 'ミニ模試', minutes: 10, p1: 0, p2: 5, p34: 0, p5: 10, p6: 0, p7: 0 },
+  full: { label: '実力測定モード', minutes: 40, p1: 3, p2: 13, p34: 5, p5: 20, p6: 2, p7: 3 },
 } as const;
 
+const P1_LABELS = ['A', 'B', 'C', 'D'] as const;
 const P2_LABELS = ['A', 'B', 'C'] as const;
 
 interface TestPlan {
   mode: Mode;
+  part1: Part1Item[];
   part2: Part2Item[];
   part34: ListeningSet[];
   part5: QuizQuestion[];
@@ -48,6 +51,7 @@ interface TestPlan {
 }
 
 interface Answers {
+  p1: (number | null)[];
   p2: (number | null)[];
   p34: (number | null)[][];
   p5: (number | null)[];
@@ -55,7 +59,7 @@ interface Answers {
   p7: (number | null)[][];
 }
 
-const SECTION_ORDER = ['part2', 'part34', 'part5', 'part6', 'part7'] as const;
+const SECTION_ORDER = ['part1', 'part2', 'part34', 'part5', 'part6', 'part7'] as const;
 type SectionKind = (typeof SECTION_ORDER)[number];
 
 export default function MockTestScreen() {
@@ -96,7 +100,10 @@ export default function MockTestScreen() {
   // リスニングセクションは設問が変わるたびに自動再生
   useEffect(() => {
     if (phase !== 'test' || !plan) return;
-    if (kind === 'part2') {
+    if (kind === 'part1') {
+      const it = plan.part1[itemIdx];
+      speak(`Number ${itemIdx + 1}. ... A. ${it.statements[0]} ... B. ${it.statements[1]} ... C. ${it.statements[2]} ... D. ${it.statements[3]}`);
+    } else if (kind === 'part2') {
       const it = plan.part2[itemIdx];
       speak(`Number ${itemIdx + 1}. ${it.question} ... A. ${it.choices[0]} ... B. ${it.choices[1]} ... C. ${it.choices[2]}`);
     } else if (kind === 'part34') {
@@ -110,6 +117,7 @@ export default function MockTestScreen() {
     const c = MODE_CONFIG[mode];
     const p: TestPlan = {
       mode,
+      part1: shuffle(PART1_ITEMS).slice(0, c.p1),
       part2: shuffle(PART2_ITEMS).slice(0, c.p2),
       part34: shuffle(LISTENING_SETS).slice(0, c.p34),
       part5: shuffle(QUIZZES).slice(0, c.p5),
@@ -117,6 +125,7 @@ export default function MockTestScreen() {
       part7: shuffle(PART7_SETS).slice(0, c.p7),
     };
     answersRef.current = {
+      p1: Array(p.part1.length).fill(null),
       p2: Array(p.part2.length).fill(null),
       p34: p.part34.map((s) => Array(s.questions.length).fill(null)),
       p5: Array(p.part5.length).fill(null),
@@ -156,6 +165,9 @@ export default function MockTestScreen() {
       const correct = a.p5[i] === plan.part5[i].answer;
       await recordTagAnswer(plan.part5[i].tag, correct);
       if (!correct) await recordMistake('part5', plan.part5[i].id, today);
+    }
+    for (let i = 0; i < plan.part1.length; i++) {
+      if (a.p1[i] !== plan.part1[i].answer) await recordMistake('part1', plan.part1[i].id, today);
     }
     for (let i = 0; i < plan.part2.length; i++) {
       if (a.p2[i] !== plan.part2[i].answer) await recordMistake('part2', plan.part2[i].id, today);
@@ -224,9 +236,9 @@ export default function MockTestScreen() {
               </Card>
 
               <Card tint={features.mock.tint}>
-                <ThemedText type="smallBold">📈 実力測定モード（約40分・65問）</ThemedText>
+                <ThemedText type="smallBold">📈 実力測定モード（約40分・68問）</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  L: Part 2×13問 + Part 3/4×5セット（15問）{'\n'}
+                  L: Part 1×3問 + Part 2×13問 + Part 3/4×5セット（15問）{'\n'}
                   R: Part 5×20問 + Part 6×2文書（8問）+ Part 7×3文書（9問）{'\n'}
                   終了後に推定スコア（10〜990点）を表示します。リスニングは自動再生されるため、音の出る環境で受験してください。
                 </ThemedText>
@@ -260,6 +272,17 @@ export default function MockTestScreen() {
                   ⏱ {mmss}
                 </ThemedText>
               </View>
+
+              {kind === 'part1' && (
+                <Part1Section
+                  item={plan.part1[itemIdx]}
+                  onPick={(i) => {
+                    a.p1[itemIdx] = i;
+                    rerender();
+                    advance();
+                  }}
+                />
+              )}
 
               {kind === 'part2' && (
                 <Part2Section
@@ -347,6 +370,8 @@ export default function MockTestScreen() {
 
 function sectionSize(plan: TestPlan, kind: SectionKind): number {
   switch (kind) {
+    case 'part1':
+      return plan.part1.length;
     case 'part2':
       return plan.part2.length;
     case 'part34':
@@ -364,6 +389,8 @@ function sectionTitle(plan: TestPlan, kind: SectionKind, idx: number): string {
   const n = idx + 1;
   const total = sectionSize(plan, kind);
   switch (kind) {
+    case 'part1':
+      return `Part 1 — 第 ${n}/${total} 問`;
     case 'part2':
       return `Part 2 — 第 ${n}/${total} 問`;
     case 'part34':
@@ -378,6 +405,7 @@ function sectionTitle(plan: TestPlan, kind: SectionKind, idx: number): string {
 }
 
 function countCorrect(plan: TestPlan, a: Answers) {
+  const p1 = plan.part1.filter((it, i) => a.p1[i] === it.answer).length;
   const p2 = plan.part2.filter((it, i) => a.p2[i] === it.answer).length;
   const p34 = plan.part34.reduce(
     (sum, set, si) => sum + set.questions.filter((q, qi) => a.p34[si][qi] === q.answer).length,
@@ -392,12 +420,13 @@ function countCorrect(plan: TestPlan, a: Answers) {
     (sum, set, si) => sum + set.questions.filter((q, qi) => a.p7[si][qi] === q.answer).length,
     0
   );
-  const listeningTotal = plan.part2.length + plan.part34.reduce((s, x) => s + x.questions.length, 0);
+  const listeningTotal =
+    plan.part1.length + plan.part2.length + plan.part34.reduce((s, x) => s + x.questions.length, 0);
   const readingTotal =
     plan.part5.length +
     plan.part6.reduce((s, x) => s + x.blanks.length, 0) +
     plan.part7.reduce((s, x) => s + x.questions.length, 0);
-  return { listening: p2 + p34, listeningTotal, reading: p5 + p6 + p7, readingTotal };
+  return { listening: p1 + p2 + p34, listeningTotal, reading: p5 + p6 + p7, readingTotal };
 }
 
 /* ---------- テスト中のUI部品 ---------- */
@@ -409,6 +438,32 @@ function ChoiceButton({ label, onPress }: { label: string; onPress: () => void }
         <ThemedText type="default">{label}</ThemedText>
       </ThemedView>
     </Pressable>
+  );
+}
+
+function Part1Section({ item, onPick }: { item: Part1Item; onPick: (i: number) => void }) {
+  return (
+    <>
+      <Card style={styles.sceneCard}>
+        <ThemedText style={styles.sceneEmoji}>{item.scene}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.sceneJa}>
+          {item.sceneJa}
+        </ThemedText>
+      </Card>
+      <ThemedText type="small" themeColor="textSecondary">
+        場面（写真の代わり）に最も合う描写文を選んでください。
+      </ThemedText>
+      <AppButton
+        label="🔊 もう一度再生"
+        variant="ghost"
+        onPress={() => speak(`A. ${item.statements[0]} ... B. ${item.statements[1]} ... C. ${item.statements[2]} ... D. ${item.statements[3]}`)}
+      />
+      <View style={styles.choices}>
+        {P1_LABELS.map((label, i) => (
+          <ChoiceButton key={label} label={`(${label})`} onPress={() => onPick(i)} />
+        ))}
+      </View>
+    </>
   );
 }
 
@@ -496,6 +551,17 @@ interface ReviewEntry {
 
 function buildReview(plan: TestPlan, a: Answers): ReviewEntry[] {
   const entries: ReviewEntry[] = [];
+  plan.part1.forEach((it, i) => {
+    if (a.p1[i] !== it.answer) {
+      entries.push({
+        key: it.id,
+        header: `Part 1${a.p1[i] === null ? '（時間切れ）' : ''}`,
+        body: `${it.scene} ${it.sceneJa}`,
+        correct: `(${P1_LABELS[it.answer]}) ${it.statements[it.answer]}`,
+        explanation: it.explanation,
+      });
+    }
+  });
   plan.part2.forEach((it, i) => {
     if (a.p2[i] !== it.answer) {
       entries.push({
@@ -592,7 +658,7 @@ function ResultView({
             ±{estimated.margin}点程度の目安　（L {estimated.listening} / R {estimated.reading}）
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            ※ 47問・TTS音声・自作問題による簡易推定です。公式スコアを保証するものではありません。
+            ※ 68問・TTS音声・自作問題による簡易推定です。公式スコアを保証するものではありません。
           </ThemedText>
         </Card>
       )}
@@ -673,6 +739,19 @@ const styles = StyleSheet.create({
   },
   passage: {
     lineHeight: 22,
+  },
+  sceneCard: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.four,
+  },
+  sceneEmoji: {
+    fontSize: 44,
+    lineHeight: 56,
+    textAlign: 'center',
+  },
+  sceneJa: {
+    textAlign: 'center',
   },
   resultCard: {
     alignItems: 'center',

@@ -63,6 +63,7 @@ const FEATURES: {
   { emoji: '✍️', title: 'ディクテーション', subtitle: '書き取りで定着', feature: 'listening', href: '/listening/dictation' },
   { emoji: '🗣️', title: 'Part 3/4 会話', subtitle: '長文リスニング', feature: 'listening', href: '/listening/part34' },
   { emoji: '📰', title: 'Part 6/7 読解', subtitle: '長文問題', feature: 'reading', href: '/quiz/part7' },
+  { emoji: '🖼️', title: 'Part 1 写真描写', subtitle: '場面に合う文を選ぶ', feature: 'listening', href: '/listening/part1' },
   { emoji: '🎙️', title: 'Part 2 応答', subtitle: '音声のみで挑戦', feature: 'listening', href: '/listening/part2' },
   { emoji: '📈', title: '模試・実力測定', subtitle: '推定スコアを測る', feature: 'mock', href: '/quiz/mock' },
   { emoji: '📓', title: '間違いノート', subtitle: '解き直しで克服', feature: 'mistakes', href: '/quiz/mistakes' },

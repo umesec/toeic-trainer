@@ -39,7 +39,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'part1',
     title: 'Part 1: 写真描写問題（6問）',
     body:
-      '1枚の写真について4つの英文が読み上げられ、写真を最も正しく描写しているものを選びます。「A man is riding a bicycle.（男性が自転車に乗っている）」のような現在進行形の文が中心です。\n\n問題数が少なく比較的易しいPartですが、受動態（is being displayed など）や、写真に写っていない物を含む引っかけに注意。\n\n※ このアプリでは写真素材が必要なため未対応です。市販の公式問題集で補いましょう。',
+      '1枚の写真について4つの英文が読み上げられ、写真を最も正しく描写しているものを選びます。「A man is riding a bicycle.（男性が自転車に乗っている）」のような現在進行形の文が中心です。\n\n問題数が少なく比較的易しいPartですが、受動態（is being displayed など）や、写真に写っていない物を含む引っかけに注意。\n\n※ このアプリでは写真の代わりに絵文字と場面説明を表示して練習します。',
+    link: { label: 'Part 1 を練習する', href: '/listening/part1' },
   },
   {
     id: 'part2',

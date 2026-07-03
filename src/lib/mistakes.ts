@@ -1,3 +1,4 @@
+import { PART1_ITEMS } from '@/data/part1';
 import { PART2_ITEMS } from '@/data/part2';
 import { LISTENING_SETS } from '@/data/part34';
 import { PART6_SETS } from '@/data/part6';
@@ -28,6 +29,18 @@ export const setQuestionId = (setId: string, index: number) => `${setId}:${index
 
 export function resolveMistake(entry: MistakeEntry): ResolvedMistake | null {
   switch (entry.kind) {
+    case 'part1': {
+      const item = PART1_ITEMS.find((p) => p.id === entry.id);
+      if (!item) return null;
+      return {
+        header: 'Part 1 写真描写',
+        prompt: `${item.scene}\n${item.sceneJa}`,
+        choices: item.statements,
+        answer: item.answer,
+        explanation: item.explanation,
+        speakText: `A. ${item.statements[0]} ... B. ${item.statements[1]} ... C. ${item.statements[2]} ... D. ${item.statements[3]}`,
+      };
+    }
     case 'part2': {
       const item = PART2_ITEMS.find((p) => p.id === entry.id);
       if (!item) return null;
