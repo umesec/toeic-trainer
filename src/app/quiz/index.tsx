@@ -113,12 +113,23 @@ export default function QuizScreen() {
 
               <WeaknessCard tagStats={tagStats} />
 
+              <View style={styles.linkRow}>
+                <Card style={styles.linkCard}>
+                  <ThemedText type="smallBold">📄 Part 6 長文穴埋め</ThemedText>
+                  <AppButton label="練習する" variant="ghost" onPress={() => router.push('/quiz/part6')} />
+                </Card>
+                <Card style={styles.linkCard}>
+                  <ThemedText type="smallBold">📰 Part 7 長文読解</ThemedText>
+                  <AppButton label="練習する" variant="ghost" onPress={() => router.push('/quiz/part7')} />
+                </Card>
+              </View>
+
               <Card style={styles.mockCard}>
-                <ThemedText type="smallBold">⏱ ミニ模試</ThemedText>
+                <ThemedText type="smallBold">⏱ 模試・実力測定</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  制限時間10分で Part 2（リスニング）5問 + Part 5（文法・語彙）10問。本番同様、回答中に正誤は表示されません。
+                  ミニ模試（10分・15問）と、推定スコア付きの実力測定モード（30分・47問、Part 2〜7を横断）が受けられます。
                 </ThemedText>
-                <AppButton label="ミニ模試を受ける" variant="ghost" onPress={() => router.push('/quiz/mock')} />
+                <AppButton label="模試を受ける" variant="ghost" onPress={() => router.push('/quiz/mock')} />
               </Card>
             </>
           )}
@@ -243,6 +254,14 @@ const styles = StyleSheet.create({
   mockCard: {
     borderWidth: 1.5,
     borderColor: '#3c87f7',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  linkCard: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
   weakRow: {
     flexDirection: 'row',

@@ -127,8 +127,12 @@ export default function HomeScreen() {
             <AppButton label="✍️ ディクテーション" onPress={() => router.push('/listening/dictation')} style={styles.quickButton} />
           </View>
           <View style={styles.quickRow}>
+            <AppButton label="🗣️ Part 3/4 会話" onPress={() => router.push('/listening/part34')} style={styles.quickButton} />
+            <AppButton label="📰 Part 6/7 読解" onPress={() => router.push('/quiz/part7')} style={styles.quickButton} />
+          </View>
+          <View style={styles.quickRow}>
             <AppButton label="🎙️ Part 2 応答問題" onPress={() => router.push('/listening/part2')} style={styles.quickButton} />
-            <AppButton label="⏱ ミニ模試" onPress={() => router.push('/quiz/mock')} style={styles.quickButton} />
+            <AppButton label="📈 模試・実力測定" onPress={() => router.push('/quiz/mock')} style={styles.quickButton} />
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -64,6 +64,17 @@ export default function ListeningIndexScreen() {
               </ThemedText>
             </Card>
           </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/listening/part34')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <Card style={styles.dictationCard}>
+              <ThemedText type="smallBold">🗣️ Part 3/4 会話・トーク</ThemedText>
+              <ThemedText type="small">
+                会話やアナウンスを聞いて3つの設問に答える本番形式。答え合わせでスクリプトと訳を確認できます。
+              </ThemedText>
+            </Card>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

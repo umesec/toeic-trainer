@@ -1,0 +1,178 @@
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { AppButton, Card } from '@/components/ui';
+import { Spacing } from '@/constants/theme';
+import { todayStr } from '@/lib/srs';
+import { bumpDaily, recordStudy } from '@/lib/storage';
+
+export interface PassageQuestion {
+  label: string;
+  choices: [string, string, string, string];
+  answer: number;
+  explanation: string;
+}
+
+/**
+ * Part 6/7 共通の「文書 + 設問」練習コンポーネント。
+ * 全問回答後に訳を表示できる。
+ */
+export function PassagePractice({
+  docType,
+  passage,
+  passageJa,
+  questions,
+}: {
+  docType: string;
+  passage: string;
+  passageJa: string;
+  questions: PassageQuestion[];
+}) {
+  const [answers, setAnswers] = useState<(number | null)[]>(Array(questions.length).fill(null));
+  const [showJa, setShowJa] = useState(false);
+
+  // 文書を開いたら「今日のクイズ学習」としてカウント
+  useEffect(() => {
+    const today = todayStr();
+    bumpDaily(today, 'quiz');
+    recordStudy(today);
+  }, []);
+
+  const allAnswered = answers.every((a) => a !== null);
+  const correctCount = questions.filter((q, i) => answers[i] === q.answer).length;
+
+  return (
+    <>
+      <Card>
+        <ThemedText type="small" themeColor="textSecondary">
+          【{docType}】
+        </ThemedText>
+        <ThemedText type="small" style={styles.passage}>
+          {passage}
+        </ThemedText>
+      </Card>
+
+      {questions.map((q, qi) => {
+        const picked = answers[qi];
+        const done = picked !== null;
+        return (
+          <Card key={q.label}>
+            <ThemedText type="smallBold">{q.label}</ThemedText>
+            {q.choices.map((choice, ci) => {
+              const isAnswer = ci === q.answer;
+              const isPicked = ci === picked;
+              return (
+                <Pressable
+                  key={choice}
+                  onPress={() => {
+                    if (done) return;
+                    const next = [...answers];
+                    next[qi] = ci;
+                    setAnswers(next);
+                  }}
+                  style={({ pressed }) => [
+                    styles.choice,
+                    done && isAnswer && styles.choiceCorrect,
+                    done && isPicked && !isAnswer && styles.choiceWrong,
+                    pressed && !done && styles.pressed,
+                  ]}>
+                  <ThemedView type="backgroundElement" style={styles.choiceInner}>
+                    <ThemedText type="small">
+                      ({String.fromCharCode(65 + ci)}) {choice}
+                      {done && isAnswer ? '  ✔' : ''}
+                      {done && isPicked && !isAnswer ? '  ✘' : ''}
+                    </ThemedText>
+                  </ThemedView>
+                </Pressable>
+              );
+            })}
+            {done && (
+              <ThemedText type="small" themeColor="textSecondary">
+                💡 {q.explanation}
+              </ThemedText>
+            )}
+          </Card>
+        );
+      })}
+
+      {allAnswered && (
+        <Card>
+          <ThemedText type="smallBold">
+            結果: {correctCount} / {questions.length} 問正解
+          </ThemedText>
+          <AppButton
+            label={showJa ? '訳を隠す' : '📄 全文訳を見る'}
+            variant="ghost"
+            onPress={() => setShowJa((s) => !s)}
+          />
+          {showJa && (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.passage}>
+              {passageJa}
+            </ThemedText>
+          )}
+        </Card>
+      )}
+    </>
+  );
+}
+
+export function SetListCard({
+  title,
+  subtitle,
+  meta,
+  onPress,
+}: {
+  title: string;
+  subtitle: string;
+  meta: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      <Card>
+        <View style={styles.cardHeader}>
+          <ThemedText type="smallBold">{title}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {meta}
+          </ThemedText>
+        </View>
+        <ThemedText type="small" themeColor="textSecondary">
+          {subtitle}
+        </ThemedText>
+      </Card>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  passage: {
+    lineHeight: 22,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  choice: {
+    borderRadius: Spacing.two,
+  },
+  choiceInner: {
+    borderRadius: Spacing.two,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  choiceCorrect: {
+    borderWidth: 2,
+    borderColor: '#2fa96c',
+  },
+  choiceWrong: {
+    borderWidth: 2,
+    borderColor: '#e5484d',
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+});

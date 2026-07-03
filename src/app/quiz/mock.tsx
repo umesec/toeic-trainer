@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,9 +8,13 @@ import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { PART2_ITEMS } from '@/data/part2';
+import { LISTENING_SETS } from '@/data/part34';
+import { PART6_SETS } from '@/data/part6';
+import { PART7_SETS } from '@/data/part7';
 import { QUIZZES } from '@/data/quizzes';
-import type { Part2Item, QuizQuestion } from '@/data/types';
-import { speak, stopSpeech } from '@/lib/speech';
+import type { ListeningSet, Part2Item, Part6Set, Part7Set, QuizQuestion } from '@/data/types';
+import { estimateScore } from '@/lib/score';
+import { pitchForSpeaker, speak, speakLines, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
 import {
   addMockResult,
@@ -22,114 +26,152 @@ import {
 } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
-const P2_COUNT = 5;
-const P5_COUNT = 10;
-const TIME_LIMIT = 10 * 60; // 秒
+type Mode = 'mini' | 'full';
+
+const MODE_CONFIG = {
+  mini: { label: 'ミニ模試', minutes: 10, p2: 5, p34: 0, p5: 10, p6: 0, p7: 0 },
+  full: { label: '実力測定モード', minutes: 30, p2: 10, p34: 4, p5: 15, p6: 1, p7: 2 },
+} as const;
 
 const P2_LABELS = ['A', 'B', 'C'] as const;
 
-type Phase = 'intro' | 'part2' | 'part5' | 'result';
+interface TestPlan {
+  mode: Mode;
+  part2: Part2Item[];
+  part34: ListeningSet[];
+  part5: QuizQuestion[];
+  part6: Part6Set[];
+  part7: Part7Set[];
+}
+
+interface Answers {
+  p2: (number | null)[];
+  p34: (number | null)[][];
+  p5: (number | null)[];
+  p6: (number | null)[][];
+  p7: (number | null)[][];
+}
+
+const SECTION_ORDER = ['part2', 'part34', 'part5', 'part6', 'part7'] as const;
+type SectionKind = (typeof SECTION_ORDER)[number];
 
 export default function MockTestScreen() {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>('intro');
-  const [p2Items, setP2Items] = useState<Part2Item[]>([]);
-  const [p5Items, setP5Items] = useState<QuizQuestion[]>([]);
-  const [p2Answers, setP2Answers] = useState<(number | null)[]>([]);
-  const [p5Answers, setP5Answers] = useState<(number | null)[]>([]);
-  const [idx, setIdx] = useState(0);
-  const [remaining, setRemaining] = useState(TIME_LIMIT);
+  const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
+  const [plan, setPlan] = useState<TestPlan | null>(null);
+  const [sectionIdx, setSectionIdx] = useState(0);
+  const [itemIdx, setItemIdx] = useState(0);
+  const [remaining, setRemaining] = useState(0);
   const [history, setHistory] = useState<MockResult[]>([]);
+  const answersRef = useRef<Answers | null>(null);
+  const [, setTick] = useState(0);
+  const rerender = () => setTick((t) => t + 1);
 
   useEffect(() => {
     loadMockHistory().then(setHistory);
   }, [phase]);
 
+  const sections: SectionKind[] = plan
+    ? SECTION_ORDER.filter((k) => sectionSize(plan, k) > 0)
+    : [];
+  const kind = sections[sectionIdx];
+
   // タイマー
   useEffect(() => {
-    if (phase !== 'part2' && phase !== 'part5') return;
+    if (phase !== 'test') return;
     const timer = setInterval(() => setRemaining((r) => r - 1), 1000);
     return () => clearInterval(timer);
   }, [phase]);
 
-  // 時間切れで自動終了（未回答は不正解扱い）
   useEffect(() => {
-    if (remaining <= 0 && (phase === 'part2' || phase === 'part5')) {
-      finish(p2Answers, p5Answers);
-    }
-    // finish は state から組み立てるためこの依存で十分
+    if (remaining <= 0 && phase === 'test') finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining]);
 
-  // Part 2 は設問が変わるたびに自動再生（本番同様、耳だけで解く）
+  // リスニングセクションは設問が変わるたびに自動再生
   useEffect(() => {
-    if (phase === 'part2' && p2Items[idx]) {
-      const it = p2Items[idx];
-      speak(
-        `Number ${idx + 1}. ${it.question} ... A. ${it.choices[0]} ... B. ${it.choices[1]} ... C. ${it.choices[2]}`
-      );
+    if (phase !== 'test' || !plan) return;
+    if (kind === 'part2') {
+      const it = plan.part2[itemIdx];
+      speak(`Number ${itemIdx + 1}. ${it.question} ... A. ${it.choices[0]} ... B. ${it.choices[1]} ... C. ${it.choices[2]}`);
+    } else if (kind === 'part34') {
+      const set = plan.part34[itemIdx];
+      speakLines(set.script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })));
     }
-  }, [phase, idx, p2Items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, sectionIdx, itemIdx]);
 
-  const start = () => {
-    setP2Items(shuffle(PART2_ITEMS).slice(0, P2_COUNT));
-    setP5Items(shuffle(QUIZZES).slice(0, P5_COUNT));
-    setP2Answers(Array(P2_COUNT).fill(null));
-    setP5Answers(Array(P5_COUNT).fill(null));
-    setIdx(0);
-    setRemaining(TIME_LIMIT);
-    setPhase('part2');
+  const start = (mode: Mode) => {
+    const c = MODE_CONFIG[mode];
+    const p: TestPlan = {
+      mode,
+      part2: shuffle(PART2_ITEMS).slice(0, c.p2),
+      part34: shuffle(LISTENING_SETS).slice(0, c.p34),
+      part5: shuffle(QUIZZES).slice(0, c.p5),
+      part6: shuffle(PART6_SETS).slice(0, c.p6),
+      part7: shuffle(PART7_SETS).slice(0, c.p7),
+    };
+    answersRef.current = {
+      p2: Array(p.part2.length).fill(null),
+      p34: p.part34.map((s) => Array(s.questions.length).fill(null)),
+      p5: Array(p.part5.length).fill(null),
+      p6: p.part6.map((s) => Array(s.blanks.length).fill(null)),
+      p7: p.part7.map((s) => Array(s.questions.length).fill(null)),
+    };
+    setPlan(p);
+    setSectionIdx(0);
+    setItemIdx(0);
+    setRemaining(c.minutes * 60);
+    setPhase('test');
   };
 
-  const finish = async (p2A: (number | null)[], p5A: (number | null)[]) => {
+  const advance = () => {
+    if (!plan) return;
+    stopSpeech();
+    const count = sectionSize(plan, kind);
+    if (itemIdx + 1 < count) {
+      setItemIdx(itemIdx + 1);
+    } else if (sectionIdx + 1 < sections.length) {
+      setSectionIdx(sectionIdx + 1);
+      setItemIdx(0);
+    } else {
+      finish();
+    }
+  };
+
+  const finish = async () => {
+    if (!plan || !answersRef.current) return;
     stopSpeech();
     setPhase('result');
-    const listening = p2Items.filter((it, i) => p2A[i] === it.answer).length;
-    const reading = p5Items.filter((it, i) => p5A[i] === it.answer).length;
+    const a = answersRef.current;
+    const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, a);
     const today = todayStr();
     // recordTagAnswer は read-modify-write のため直列に実行する
-    for (let i = 0; i < p5Items.length; i++) {
-      await recordTagAnswer(p5Items[i].tag, p5A[i] === p5Items[i].answer);
+    for (let i = 0; i < plan.part5.length; i++) {
+      await recordTagAnswer(plan.part5[i].tag, a.p5[i] === plan.part5[i].answer);
     }
-    await bumpDaily(today, 'listening', p2Items.length);
-    await bumpDaily(today, 'quiz', p5Items.length);
+    await bumpDaily(today, 'listening', listeningTotal);
+    await bumpDaily(today, 'quiz', readingTotal);
     await recordStudy(today);
+    const estimated =
+      plan.mode === 'full'
+        ? estimateScore(listening, listeningTotal, reading, readingTotal)
+        : undefined;
     await addMockResult({
       date: today,
       listening,
-      listeningTotal: p2Items.length,
+      listeningTotal,
       reading,
-      readingTotal: p5Items.length,
+      readingTotal,
+      estimatedTotal: estimated?.total,
     });
-  };
-
-  const answerP2 = (i: number) => {
-    const a = [...p2Answers];
-    a[idx] = i;
-    setP2Answers(a);
-    stopSpeech();
-    if (idx + 1 < p2Items.length) {
-      setIdx(idx + 1);
-    } else {
-      setIdx(0);
-      setPhase('part5');
-    }
-  };
-
-  const answerP5 = (i: number) => {
-    const a = [...p5Answers];
-    a[idx] = i;
-    setP5Answers(a);
-    if (idx + 1 < p5Items.length) {
-      setIdx(idx + 1);
-    } else {
-      finish(p2Answers, a);
-    }
   };
 
   const mmss = `${String(Math.floor(Math.max(0, remaining) / 60)).padStart(2, '0')}:${String(
     Math.max(0, remaining) % 60
   ).padStart(2, '0')}`;
+
+  const a = answersRef.current;
 
   return (
     <ThemedView style={styles.container}>
@@ -140,98 +182,129 @@ export default function MockTestScreen() {
               <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
                 <ThemedText type="linkPrimary">← クイズに戻る</ThemedText>
               </Pressable>
-              <ThemedText type="subtitle">⏱ ミニ模試</ThemedText>
+              <ThemedText type="subtitle">模試</ThemedText>
+
               <Card>
-                <ThemedText type="small">
-                  ・Part 2（応答問題）{P2_COUNT}問 → Part 5（文法・語彙）{P5_COUNT}問{'\n'}
-                  ・制限時間 {TIME_LIMIT / 60} 分。時間切れで自動終了{'\n'}
-                  ・本番同様、回答中に正誤は表示されません{'\n'}
-                  ・Part 2 は問題文が自動で読み上げられます（音が出ます）
+                <ThemedText type="smallBold">⏱ ミニ模試（約10分・15問）</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Part 2×5問 + Part 5×10問。スキマ時間の腕試しに。スコア推定はありません。
                 </ThemedText>
+                <AppButton label="ミニ模試をはじめる" onPress={() => start('mini')} />
               </Card>
+
+              <Card style={styles.fullCard}>
+                <ThemedText type="smallBold">📈 実力測定モード（約30分・47問）</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  L: Part 2×10問 + Part 3/4×4セット（12問){'\n'}
+                  R: Part 5×15問 + Part 6×1文書（4問）+ Part 7×2文書（6問）{'\n'}
+                  終了後に推定スコア（10〜990点）を表示します。リスニングは自動再生されるため、音の出る環境で受験してください。
+                </ThemedText>
+                <AppButton label="実力測定をはじめる" onPress={() => start('full')} />
+              </Card>
+
               {history.length > 0 && (
                 <Card>
                   <ThemedText type="smallBold">過去の結果</ThemedText>
-                  {history.slice(-3).reverse().map((h, i) => (
-                    <View key={`${h.date}-${i}`} style={styles.historyRow}>
+                  {history.slice(-5).reverse().map((h, i) => (
+                    <View key={`${h.date}-${i}`} style={styles.rowBetween}>
                       <ThemedText type="small" themeColor="textSecondary">
                         {h.date}
                       </ThemedText>
                       <ThemedText type="small">
                         L {h.listening}/{h.listeningTotal}・R {h.reading}/{h.readingTotal}
+                        {h.estimatedTotal ? `　推定 ${h.estimatedTotal}点` : ''}
                       </ThemedText>
                     </View>
                   ))}
                 </Card>
               )}
-              <AppButton label="模試をはじめる" onPress={start} />
             </>
           )}
 
-          {(phase === 'part2' || phase === 'part5') && (
-            <View style={styles.testHeader}>
-              <ThemedText type="smallBold">
-                {phase === 'part2' ? `Part 2 — 第 ${idx + 1}/${p2Items.length} 問` : `Part 5 — 第 ${idx + 1}/${p5Items.length} 問`}
-              </ThemedText>
-              <ThemedText type="smallBold" style={remaining < 60 ? styles.timeWarning : styles.accent}>
-                ⏱ {mmss}
-              </ThemedText>
-            </View>
-          )}
-
-          {phase === 'part2' && p2Items[idx] && (
+          {phase === 'test' && plan && a && (
             <>
-              <ThemedText type="small" themeColor="textSecondary">
-                最も適切な応答を選んでください。
-              </ThemedText>
-              <AppButton
-                label="🔊 もう一度再生"
-                variant="ghost"
-                onPress={() => {
-                  const it = p2Items[idx];
-                  speak(`${it.question} ... A. ${it.choices[0]} ... B. ${it.choices[1]} ... C. ${it.choices[2]}`);
-                }}
-              />
-              <View style={styles.choices}>
-                {P2_LABELS.map((label, i) => (
-                  <Pressable key={label} onPress={() => answerP2(i)} style={({ pressed }) => pressed && styles.pressed}>
-                    <ThemedView type="backgroundElement" style={styles.choiceInner}>
-                      <ThemedText type="default">({label})</ThemedText>
-                    </ThemedView>
-                  </Pressable>
-                ))}
+              <View style={styles.rowBetween}>
+                <ThemedText type="smallBold">{sectionTitle(plan, kind, itemIdx)}</ThemedText>
+                <ThemedText type="smallBold" style={remaining < 60 ? styles.timeWarning : styles.accent}>
+                  ⏱ {mmss}
+                </ThemedText>
               </View>
+
+              {kind === 'part2' && (
+                <Part2Section
+                  item={plan.part2[itemIdx]}
+                  onPick={(i) => {
+                    a.p2[itemIdx] = i;
+                    rerender();
+                    advance();
+                  }}
+                />
+              )}
+
+              {kind === 'part34' && (
+                <SetSection
+                  questions={plan.part34[itemIdx].questions.map((q) => ({ label: q.q, choices: q.choices }))}
+                  picked={a.p34[itemIdx]}
+                  onPick={(qi, ci) => {
+                    a.p34[itemIdx][qi] = ci;
+                    rerender();
+                  }}
+                  onNext={advance}
+                  extra={<AppButton label="🔊 もう一度再生" variant="ghost" onPress={() => speakLines(plan.part34[itemIdx].script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })))} />}
+                />
+              )}
+
+              {kind === 'part5' && (
+                <>
+                  <Card>
+                    <ThemedText type="default">{plan.part5[itemIdx].sentence}</ThemedText>
+                  </Card>
+                  <View style={styles.choices}>
+                    {plan.part5[itemIdx].choices.map((choice, i) => (
+                      <ChoiceButton
+                        key={choice}
+                        label={`(${String.fromCharCode(65 + i)}) ${choice}`}
+                        onPress={() => {
+                          a.p5[itemIdx] = i;
+                          rerender();
+                          advance();
+                        }}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {kind === 'part6' && (
+                <SetSection
+                  passage={`【${plan.part6[itemIdx].docType}】\n${plan.part6[itemIdx].passage}`}
+                  questions={plan.part6[itemIdx].blanks.map((b) => ({ label: `空所 [${b.no}]`, choices: b.choices }))}
+                  picked={a.p6[itemIdx]}
+                  onPick={(qi, ci) => {
+                    a.p6[itemIdx][qi] = ci;
+                    rerender();
+                  }}
+                  onNext={advance}
+                />
+              )}
+
+              {kind === 'part7' && (
+                <SetSection
+                  passage={`【${plan.part7[itemIdx].docType}】\n${plan.part7[itemIdx].passage}`}
+                  questions={plan.part7[itemIdx].questions.map((q, i) => ({ label: `Q${i + 1}. ${q.q}`, choices: q.choices }))}
+                  picked={a.p7[itemIdx]}
+                  onPick={(qi, ci) => {
+                    a.p7[itemIdx][qi] = ci;
+                    rerender();
+                  }}
+                  onNext={advance}
+                />
+              )}
             </>
           )}
 
-          {phase === 'part5' && p5Items[idx] && (
-            <>
-              <Card>
-                <ThemedText type="default">{p5Items[idx].sentence}</ThemedText>
-              </Card>
-              <View style={styles.choices}>
-                {p5Items[idx].choices.map((choice, i) => (
-                  <Pressable key={choice} onPress={() => answerP5(i)} style={({ pressed }) => pressed && styles.pressed}>
-                    <ThemedView type="backgroundElement" style={styles.choiceInner}>
-                      <ThemedText type="default">
-                        ({String.fromCharCode(65 + i)}) {choice}
-                      </ThemedText>
-                    </ThemedView>
-                  </Pressable>
-                ))}
-              </View>
-            </>
-          )}
-
-          {phase === 'result' && (
-            <MockResultView
-              p2Items={p2Items}
-              p5Items={p5Items}
-              p2Answers={p2Answers}
-              p5Answers={p5Answers}
-              onRetry={start}
-              onBack={() => router.back()}
-            />
+          {phase === 'result' && plan && a && (
+            <ResultView plan={plan} answers={a} onRetry={() => start(plan.mode)} onBack={() => setPhase('intro')} />
           )}
         </ScrollView>
       </SafeAreaView>
@@ -239,87 +312,293 @@ export default function MockTestScreen() {
   );
 }
 
-function MockResultView({
-  p2Items,
-  p5Items,
-  p2Answers,
-  p5Answers,
+/* ---------- セクション補助 ---------- */
+
+function sectionSize(plan: TestPlan, kind: SectionKind): number {
+  switch (kind) {
+    case 'part2':
+      return plan.part2.length;
+    case 'part34':
+      return plan.part34.length;
+    case 'part5':
+      return plan.part5.length;
+    case 'part6':
+      return plan.part6.length;
+    case 'part7':
+      return plan.part7.length;
+  }
+}
+
+function sectionTitle(plan: TestPlan, kind: SectionKind, idx: number): string {
+  const n = idx + 1;
+  const total = sectionSize(plan, kind);
+  switch (kind) {
+    case 'part2':
+      return `Part 2 — 第 ${n}/${total} 問`;
+    case 'part34':
+      return `Part ${plan.part34[idx].part} — セット ${n}/${total}`;
+    case 'part5':
+      return `Part 5 — 第 ${n}/${total} 問`;
+    case 'part6':
+      return `Part 6 — 文書 ${n}/${total}`;
+    case 'part7':
+      return `Part 7 — 文書 ${n}/${total}`;
+  }
+}
+
+function countCorrect(plan: TestPlan, a: Answers) {
+  const p2 = plan.part2.filter((it, i) => a.p2[i] === it.answer).length;
+  const p34 = plan.part34.reduce(
+    (sum, set, si) => sum + set.questions.filter((q, qi) => a.p34[si][qi] === q.answer).length,
+    0
+  );
+  const p5 = plan.part5.filter((it, i) => a.p5[i] === it.answer).length;
+  const p6 = plan.part6.reduce(
+    (sum, set, si) => sum + set.blanks.filter((b, bi) => a.p6[si][bi] === b.answer).length,
+    0
+  );
+  const p7 = plan.part7.reduce(
+    (sum, set, si) => sum + set.questions.filter((q, qi) => a.p7[si][qi] === q.answer).length,
+    0
+  );
+  const listeningTotal = plan.part2.length + plan.part34.reduce((s, x) => s + x.questions.length, 0);
+  const readingTotal =
+    plan.part5.length +
+    plan.part6.reduce((s, x) => s + x.blanks.length, 0) +
+    plan.part7.reduce((s, x) => s + x.questions.length, 0);
+  return { listening: p2 + p34, listeningTotal, reading: p5 + p6 + p7, readingTotal };
+}
+
+/* ---------- テスト中のUI部品 ---------- */
+
+function ChoiceButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+      <ThemedView type="backgroundElement" style={styles.choiceInner}>
+        <ThemedText type="default">{label}</ThemedText>
+      </ThemedView>
+    </Pressable>
+  );
+}
+
+function Part2Section({ item, onPick }: { item: Part2Item; onPick: (i: number) => void }) {
+  return (
+    <>
+      <ThemedText type="small" themeColor="textSecondary">
+        最も適切な応答を選んでください。
+      </ThemedText>
+      <AppButton
+        label="🔊 もう一度再生"
+        variant="ghost"
+        onPress={() => speak(`${item.question} ... A. ${item.choices[0]} ... B. ${item.choices[1]} ... C. ${item.choices[2]}`)}
+      />
+      <View style={styles.choices}>
+        {P2_LABELS.map((label, i) => (
+          <ChoiceButton key={label} label={`(${label})`} onPress={() => onPick(i)} />
+        ))}
+      </View>
+    </>
+  );
+}
+
+/** Part 3/4/6/7 共通の「セット単位で全問回答 → 次へ」ビュー */
+function SetSection({
+  passage,
+  questions,
+  picked,
+  onPick,
+  onNext,
+  extra,
+}: {
+  passage?: string;
+  questions: { label: string; choices: readonly string[] }[];
+  picked: (number | null)[];
+  onPick: (qi: number, ci: number) => void;
+  onNext: () => void;
+  extra?: React.ReactNode;
+}) {
+  const allAnswered = picked.every((p) => p !== null);
+  return (
+    <>
+      {extra}
+      {!!passage && (
+        <Card>
+          <ThemedText type="small" style={styles.passage}>
+            {passage}
+          </ThemedText>
+        </Card>
+      )}
+      {questions.map((q, qi) => (
+        <Card key={q.label}>
+          <ThemedText type="smallBold">{q.label}</ThemedText>
+          {q.choices.map((choice, ci) => (
+            <Pressable
+              key={choice}
+              onPress={() => onPick(qi, ci)}
+              style={({ pressed }) => [pressed && styles.pressed]}>
+              <ThemedView
+                type={picked[qi] === ci ? 'backgroundSelected' : 'backgroundElement'}
+                style={[styles.choiceInner, picked[qi] === ci && styles.choiceSelected]}>
+                <ThemedText type="small">
+                  ({String.fromCharCode(65 + ci)}) {choice}
+                </ThemedText>
+              </ThemedView>
+            </Pressable>
+          ))}
+        </Card>
+      ))}
+      <AppButton label="次へ" onPress={onNext} disabled={!allAnswered} />
+    </>
+  );
+}
+
+/* ---------- 結果 ---------- */
+
+interface ReviewEntry {
+  key: string;
+  header: string;
+  body: string;
+  correct: string;
+  explanation: string;
+}
+
+function buildReview(plan: TestPlan, a: Answers): ReviewEntry[] {
+  const entries: ReviewEntry[] = [];
+  plan.part2.forEach((it, i) => {
+    if (a.p2[i] !== it.answer) {
+      entries.push({
+        key: it.id,
+        header: `Part 2${a.p2[i] === null ? '（時間切れ）' : ''}`,
+        body: `Q: ${it.question}（${it.questionJa}）`,
+        correct: `(${P2_LABELS[it.answer]}) ${it.choices[it.answer]}`,
+        explanation: it.explanation,
+      });
+    }
+  });
+  plan.part34.forEach((set, si) => {
+    set.questions.forEach((q, qi) => {
+      if (a.p34[si][qi] !== q.answer) {
+        entries.push({
+          key: `${set.id}-${qi}`,
+          header: `Part ${set.part}「${set.title}」`,
+          body: q.q,
+          correct: `(${String.fromCharCode(65 + q.answer)}) ${q.choices[q.answer]}`,
+          explanation: q.explanation,
+        });
+      }
+    });
+  });
+  plan.part5.forEach((it, i) => {
+    if (a.p5[i] !== it.answer) {
+      entries.push({
+        key: it.id,
+        header: `Part 5［${it.tag}］${a.p5[i] === null ? '（時間切れ）' : ''}`,
+        body: it.sentence,
+        correct: `(${String.fromCharCode(65 + it.answer)}) ${it.choices[it.answer]}`,
+        explanation: it.explanation,
+      });
+    }
+  });
+  plan.part6.forEach((set, si) => {
+    set.blanks.forEach((b, bi) => {
+      if (a.p6[si][bi] !== b.answer) {
+        entries.push({
+          key: `${set.id}-${b.no}`,
+          header: `Part 6【${set.docType}】空所[${b.no}]`,
+          body: '',
+          correct: `(${String.fromCharCode(65 + b.answer)}) ${b.choices[b.answer]}`,
+          explanation: b.explanation,
+        });
+      }
+    });
+  });
+  plan.part7.forEach((set, si) => {
+    set.questions.forEach((q, qi) => {
+      if (a.p7[si][qi] !== q.answer) {
+        entries.push({
+          key: `${set.id}-${qi}`,
+          header: `Part 7【${set.docType}】`,
+          body: q.q,
+          correct: `(${String.fromCharCode(65 + q.answer)}) ${q.choices[q.answer]}`,
+          explanation: q.explanation,
+        });
+      }
+    });
+  });
+  return entries;
+}
+
+function ResultView({
+  plan,
+  answers,
   onRetry,
   onBack,
 }: {
-  p2Items: Part2Item[];
-  p5Items: QuizQuestion[];
-  p2Answers: (number | null)[];
-  p5Answers: (number | null)[];
+  plan: TestPlan;
+  answers: Answers;
   onRetry: () => void;
   onBack: () => void;
 }) {
-  const listening = p2Items.filter((it, i) => p2Answers[i] === it.answer).length;
-  const reading = p5Items.filter((it, i) => p5Answers[i] === it.answer).length;
-  const total = listening + reading;
-  const totalCount = p2Items.length + p5Items.length;
-
-  const wrongP2 = p2Items.map((it, i) => ({ it, picked: p2Answers[i] })).filter((x) => x.picked !== x.it.answer);
-  const wrongP5 = p5Items.map((it, i) => ({ it, picked: p5Answers[i] })).filter((x) => x.picked !== x.it.answer);
+  const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, answers);
+  const estimated = plan.mode === 'full' ? estimateScore(listening, listeningTotal, reading, readingTotal) : null;
+  const review = buildReview(plan, answers);
 
   return (
     <>
       <ThemedText type="subtitle">結果</ThemedText>
+
+      {estimated && (
+        <Card style={styles.resultCard}>
+          <ThemedText type="small" themeColor="textSecondary">
+            推定スコア
+          </ThemedText>
+          <ThemedText type="title" style={styles.accent}>
+            {estimated.total}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            ±{estimated.margin}点程度の目安　（L {estimated.listening} / R {estimated.reading}）
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            ※ 47問・TTS音声・自作問題による簡易推定です。公式スコアを保証するものではありません。
+          </ThemedText>
+        </Card>
+      )}
+
       <Card style={styles.resultCard}>
         <ThemedText type="subtitle">
-          {total} / {totalCount}
+          {listening + reading} / {listeningTotal + readingTotal}
         </ThemedText>
-        <View style={styles.historyRow}>
-          <ThemedText type="small">🎧 リスニング（Part 2）</ThemedText>
+        <View style={styles.rowBetween}>
+          <ThemedText type="small">🎧 リスニング（Part 2〜4）</ThemedText>
           <ThemedText type="smallBold">
-            {listening} / {p2Items.length}
+            {listening} / {listeningTotal}
           </ThemedText>
         </View>
-        <View style={styles.historyRow}>
-          <ThemedText type="small">📖 リーディング（Part 5）</ThemedText>
+        <View style={styles.rowBetween}>
+          <ThemedText type="small">📖 リーディング（Part 5〜7）</ThemedText>
           <ThemedText type="smallBold">
-            {reading} / {p5Items.length}
+            {reading} / {readingTotal}
           </ThemedText>
         </View>
       </Card>
 
-      {(wrongP2.length > 0 || wrongP5.length > 0) && (
-        <ThemedText type="smallBold">間違えた問題の復習</ThemedText>
-      )}
-      {wrongP2.map(({ it, picked }) => (
-        <Card key={it.id}>
+      {review.length > 0 && <ThemedText type="smallBold">間違えた問題の復習（{review.length}問）</ThemedText>}
+      {review.map((r) => (
+        <Card key={r.key}>
           <ThemedText type="small" themeColor="textSecondary">
-            Part 2{picked === null ? '（時間切れ）' : ''}
+            {r.header}
           </ThemedText>
-          <ThemedText type="small">
-            Q: {it.question}（{it.questionJa}）
-          </ThemedText>
-          <ThemedText type="small">
-            正解: ({P2_LABELS[it.answer]}) {it.choices[it.answer]}
-          </ThemedText>
+          {!!r.body && <ThemedText type="small">{r.body}</ThemedText>}
+          <ThemedText type="small">正解: {r.correct}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            💡 {it.explanation}
-          </ThemedText>
-        </Card>
-      ))}
-      {wrongP5.map(({ it, picked }) => (
-        <Card key={it.id}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Part 5［{it.tag}］{picked === null ? '（時間切れ）' : ''}
-          </ThemedText>
-          <ThemedText type="small">{it.sentence}</ThemedText>
-          <ThemedText type="small">
-            正解: ({String.fromCharCode(65 + it.answer)}) {it.choices[it.answer]}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            💡 {it.explanation}
+            💡 {r.explanation}
           </ThemedText>
         </Card>
       ))}
 
       <View style={styles.resultButtons}>
         <AppButton label="もう一度" onPress={onRetry} />
-        <AppButton label="クイズに戻る" variant="ghost" onPress={onBack} />
+        <AppButton label="モード選択に戻る" variant="ghost" onPress={onBack} />
       </View>
     </>
   );
@@ -341,7 +620,11 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
   },
-  testHeader: {
+  fullCard: {
+    borderWidth: 1.5,
+    borderColor: '#3c87f7',
+  },
+  rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -359,10 +642,14 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.three,
+    marginTop: Spacing.one,
   },
-  historyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  choiceSelected: {
+    borderWidth: 2,
+    borderColor: '#3c87f7',
+  },
+  passage: {
+    lineHeight: 22,
   },
   resultCard: {
     alignItems: 'center',

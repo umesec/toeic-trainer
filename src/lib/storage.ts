@@ -77,6 +77,8 @@ export interface MockResult {
   listeningTotal: number;
   reading: number;
   readingTotal: number;
+  /** 実力測定モードの推定スコア合計（ミニ模試では undefined） */
+  estimatedTotal?: number;
 }
 
 export const loadMockHistory = () => getJSON<MockResult[]>(KEYS.mockHistory, []);

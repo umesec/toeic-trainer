@@ -60,6 +60,43 @@ export interface Part2Item {
   explanation: string;
 }
 
+/** 4択の設問（Part 3/4/6/7 共通） */
+export interface SetQuestion {
+  q: string;
+  choices: [string, string, string, string];
+  answer: number;
+  explanation: string;
+}
+
+/** TOEIC Part 3（会話）/ Part 4（トーク）の1セット */
+export interface ListeningSet {
+  id: string;
+  part: 3 | 4;
+  title: string;
+  /** 読み上げる本文。会話は話者ラベル（M/W等）付きで交互に */
+  script: { speaker?: string; text: string }[];
+  scriptJa: string;
+  questions: SetQuestion[];
+}
+
+/** TOEIC Part 6（長文穴埋め）の1文書。空所は [1]〜[4] のマーカー */
+export interface Part6Set {
+  id: string;
+  docType: string;
+  passage: string;
+  passageJa: string;
+  blanks: { no: number; choices: [string, string, string, string]; answer: number; explanation: string }[];
+}
+
+/** TOEIC Part 7（長文読解）の1文書 */
+export interface Part7Set {
+  id: string;
+  docType: string;
+  passage: string;
+  passageJa: string;
+  questions: SetQuestion[];
+}
+
 export interface DictationItem {
   id: string;
   sentence: string;
