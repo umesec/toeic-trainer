@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
@@ -10,7 +11,6 @@ import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/con
 import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
-import { speak } from '@/lib/speech';
 import { isDue, newCardState, review, todayStr, type Grade } from '@/lib/srs';
 import {
   bumpDaily,
@@ -174,14 +174,6 @@ export default function FlashcardsScreen() {
 
       <AddWordModal visible={showAdd} onClose={() => setShowAdd(false)} onSave={onAddWord} />
     </ThemedView>
-  );
-}
-
-function SpeakButton({ text }: { text: string }) {
-  return (
-    <Pressable onPress={() => speak(text)} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedText type="default">🔊</ThemedText>
-    </Pressable>
   );
 }
 

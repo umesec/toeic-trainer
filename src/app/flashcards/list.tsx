@@ -3,12 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
-import { speak } from '@/lib/speech';
 import { todayStr, type CardState } from '@/lib/srs';
 import {
   loadCustomWords,
@@ -131,9 +131,7 @@ export default function WordListScreen() {
                 <ThemedText type="small" style={{ color: statusColors[status.status] }}>
                   {status.label}
                 </ThemedText>
-                <Pressable onPress={() => speak(row.word)} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-                  <ThemedText type="default">🔊</ThemedText>
-                </Pressable>
+                <SpeakButton text={row.word} size={40} />
                 {row.custom && (
                   <Pressable
                     onPress={() => deleteCustom(row.id)}

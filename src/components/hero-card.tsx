@@ -1,10 +1,13 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useGradients, useShadows } from '@/hooks/use-theme';
 
-/** ホームの学習プラン用グラデーションカード。中身は白文字前提 */
+/**
+ * ホームの学習プラン用グラデーションカード。中身は白文字前提。
+ * expo-linear-gradient はネイティブ再ビルドが必要になるため、
+ * RN 0.86 新アーキが対応する CSS 風グラデーション（experimental_backgroundImage）を使う。
+ */
 export function HeroCard({
   children,
   style,
@@ -16,15 +19,18 @@ export function HeroCard({
 }) {
   const gradients = useGradients();
   const shadows = useShadows();
+  const [from, to] = colors ?? gradients.hero;
 
   return (
-    <LinearGradient
-      colors={colors ?? gradients.hero}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.card, shadows.card, style]}>
+    <View
+      style={[
+        styles.card,
+        { experimental_backgroundImage: `linear-gradient(135deg, ${from}, ${to})` },
+        shadows.card,
+        style,
+      ]}>
       {children}
-    </LinearGradient>
+    </View>
   );
 }
 

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
@@ -99,11 +100,7 @@ export default function Part2Screen() {
                       </ThemedText>
                     </ThemedView>
                   </Pressable>
-                  <Pressable
-                    onPress={() => speak(item.choices[i])}
-                    style={({ pressed }) => [styles.replay, pressed && styles.pressed]}>
-                    <ThemedText type="default">🔊</ThemedText>
-                  </Pressable>
+                  <SpeakButton text={item.choices[i]} size={40} />
                 </View>
               );
             })}
@@ -169,9 +166,6 @@ const styles = StyleSheet.create({
   },
   choiceMark: {
     borderWidth: 2,
-  },
-  replay: {
-    padding: Spacing.one,
   },
   pressed: {
     opacity: 0.6,

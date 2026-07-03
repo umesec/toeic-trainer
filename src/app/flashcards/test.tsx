@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
@@ -10,7 +11,6 @@ import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/con
 import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
-import { speak } from '@/lib/speech';
 import { newCardState, review, todayStr } from '@/lib/srs';
 import { bumpDaily, loadProgress, recordStudy, saveProgress, type ProgressMap } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
@@ -117,9 +117,7 @@ export default function WordTestScreen() {
                     {mode === 'e2j' ? question.word.word : question.word.meaning}
                   </ThemedText>
                   {mode === 'e2j' && (
-                    <Pressable onPress={() => speak(question.word.word)} style={({ pressed }) => pressed && styles.pressed}>
-                      <ThemedText type="default">🔊</ThemedText>
-                    </Pressable>
+                    <SpeakButton text={question.word.word} />
                   )}
                 </View>
                 {mode === 'e2j' && (
