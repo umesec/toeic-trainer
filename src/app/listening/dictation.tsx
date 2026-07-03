@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { DICTATION_ITEMS, SOUND_CHANGE_RULES } from '@/data/soundChanges';
 import { speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
@@ -15,6 +16,7 @@ import { normalizeSentence, shuffle, splitByFocus } from '@/lib/util';
 
 export default function DictationScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const [order] = useState(() => shuffle(DICTATION_ITEMS));
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
@@ -61,12 +63,12 @@ export default function DictationScreen() {
               value={input}
               onChangeText={setInput}
               placeholder="聞こえた英文を入力..."
-              placeholderTextColor="#8b93a5"
+              placeholderTextColor={theme.textSecondary}
               autoCapitalize="none"
               autoCorrect={false}
               editable={!checked}
               multiline
-              style={styles.input}
+              style={[styles.input, { color: theme.text }]}
             />
           </ThemedView>
 
@@ -80,7 +82,7 @@ export default function DictationScreen() {
                 </ThemedText>
                 <ThemedText type="default">
                   {before}
-                  <ThemedText type="default" style={styles.focus}>
+                  <ThemedText type="default" style={[styles.focus, { color: theme.accent }]}>
                     {focus}
                   </ThemedText>
                   {after}
@@ -130,10 +132,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     minHeight: 72,
     textAlignVertical: 'top',
-    color: '#888f9c',
   },
   focus: {
-    color: '#3c87f7',
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

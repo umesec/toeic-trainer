@@ -12,6 +12,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useFeatureColors, useShadows, useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
   return (
@@ -41,12 +42,17 @@ export default function AppTabs() {
 }
 
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+  const theme = useTheme();
+  const features = useFeatureColors();
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        type="backgroundElement"
+        style={[styles.tabButtonView, isFocused && { backgroundColor: features.mock.tint }]}>
+        <ThemedText
+          type={isFocused ? 'smallBold' : 'small'}
+          themeColor={isFocused ? undefined : 'textSecondary'}
+          style={isFocused && { color: theme.accent }}>
           {children}
         </ThemedText>
       </ThemedView>
@@ -55,9 +61,10 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
 }
 
 export function CustomTabList(props: TabListProps) {
+  const shadows = useShadows();
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
+      <ThemedView type="backgroundElement" style={[styles.innerContainer, shadows.card]}>
         <ThemedText type="smallBold" style={styles.brandText}>
           TOEIC トレーナー
         </ThemedText>

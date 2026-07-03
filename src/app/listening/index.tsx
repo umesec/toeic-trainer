@@ -6,10 +6,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useFeatureColors } from '@/hooks/use-theme';
 import { SOUND_CHANGE_RULES } from '@/data/soundChanges';
 
 export default function ListeningIndexScreen() {
   const router = useRouter();
+  const features = useFeatureColors();
 
   return (
     <ThemedView style={styles.container}>
@@ -46,7 +48,7 @@ export default function ListeningIndexScreen() {
           <Pressable
             onPress={() => router.push('/listening/dictation')}
             style={({ pressed }) => pressed && styles.pressed}>
-            <Card style={styles.dictationCard}>
+            <Card tint={features.listening.tint}>
               <ThemedText type="smallBold">✍️ ディクテーション練習</ThemedText>
               <ThemedText type="small">
                 音声変化を含む文を聞いて書き取り、どこで音が変化したかを答え合わせで確認します。
@@ -57,7 +59,7 @@ export default function ListeningIndexScreen() {
           <Pressable
             onPress={() => router.push('/listening/part2')}
             style={({ pressed }) => pressed && styles.pressed}>
-            <Card style={styles.dictationCard}>
+            <Card tint={features.listening.tint}>
               <ThemedText type="smallBold">🎙️ Part 2 応答問題</ThemedText>
               <ThemedText type="small">
                 本番のPart 2形式。質問と応答(A)(B)(C)を耳だけで聞き、最も適切な応答を選ぶ練習です。
@@ -68,7 +70,7 @@ export default function ListeningIndexScreen() {
           <Pressable
             onPress={() => router.push('/listening/part34')}
             style={({ pressed }) => pressed && styles.pressed}>
-            <Card style={styles.dictationCard}>
+            <Card tint={features.listening.tint}>
               <ThemedText type="smallBold">🗣️ Part 3/4 会話・トーク</ThemedText>
               <ThemedText type="small">
                 会話やアナウンスを聞いて3つの設問に答える本番形式。答え合わせでスクリプトと訳を確認できます。
@@ -101,10 +103,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  dictationCard: {
-    borderWidth: 1.5,
-    borderColor: '#3c87f7',
   },
   pressed: {
     opacity: 0.7,

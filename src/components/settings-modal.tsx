@@ -5,7 +5,8 @@ import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Chip } from '@/components/ui';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { setSpeechRateScale, speak } from '@/lib/speech';
 import {
   exportAll,
@@ -31,6 +32,7 @@ export function SettingsModal({
   /** インポート・リセットで進捗データが変わったときに呼ぶ（ホームの再読込用） */
   onDataChanged: () => void;
 }) {
+  const theme = useTheme();
   const [rate, setRate] = useState(1.0);
   const [exported, setExported] = useState('');
   const [copied, setCopied] = useState(false);
@@ -121,7 +123,7 @@ export function SettingsModal({
                     value={exported}
                     editable={false}
                     multiline
-                    style={styles.jsonText}
+                    style={[styles.jsonText, { color: theme.textSecondary }]}
                     numberOfLines={4}
                   />
                 </ThemedView>
@@ -140,18 +142,18 @@ export function SettingsModal({
                   setImportState('idle');
                 }}
                 placeholder="エクスポートしたJSONを貼り付け..."
-                placeholderTextColor="#8b93a5"
+                placeholderTextColor={theme.textSecondary}
                 multiline
-                style={styles.jsonText}
+                style={[styles.jsonText, { color: theme.text }]}
               />
             </ThemedView>
             {importState === 'error' && (
-              <ThemedText type="small" style={styles.error}>
+              <ThemedText type="small" style={{ color: theme.danger }}>
                 JSONの形式が正しくありません。エクスポートした内容をそのまま貼り付けてください。
               </ThemedText>
             )}
             {importState === 'done' ? (
-              <ThemedText type="small" style={styles.success}>
+              <ThemedText type="small" style={{ color: theme.success }}>
                 ✔ 復元しました
               </ThemedText>
             ) : (
@@ -167,7 +169,7 @@ export function SettingsModal({
               データリセット
             </ThemedText>
             {resetState === 'done' ? (
-              <ThemedText type="small" style={styles.success}>
+              <ThemedText type="small" style={{ color: theme.success }}>
                 ✔ すべてのデータを削除しました
               </ThemedText>
             ) : (
@@ -195,7 +197,7 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   body: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.lg,
     width: '100%',
     maxWidth: 480,
     maxHeight: '88%',
@@ -212,19 +214,12 @@ const styles = StyleSheet.create({
     marginTop: Spacing.three,
   },
   jsonBox: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.sm,
     maxHeight: 110,
   },
   jsonText: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 11,
-    color: '#888f9c',
-  },
-  error: {
-    color: '#e5484d',
-  },
-  success: {
-    color: '#2fa96c',
   },
 });

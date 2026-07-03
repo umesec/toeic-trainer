@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
 import { speak } from '@/lib/speech';
@@ -42,6 +43,7 @@ function buildQueue(progress: ProgressMap, words: Word[], today: string): Word[]
 
 export default function FlashcardsScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const today = todayStr();
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState<ProgressMap>({});
@@ -148,10 +150,10 @@ export default function FlashcardsScreen() {
 
             {flipped ? (
               <View style={styles.gradeRow}>
-                <GradeButton label="もう一度" color="#e5484d" onPress={() => onGrade('again')} />
-                <GradeButton label="難しい" color="#e08b1e" onPress={() => onGrade('hard')} />
-                <GradeButton label="普通" color="#3c87f7" onPress={() => onGrade('good')} />
-                <GradeButton label="簡単" color="#2fa96c" onPress={() => onGrade('easy')} />
+                <GradeButton label="もう一度" color={theme.danger} onPress={() => onGrade('again')} />
+                <GradeButton label="難しい" color={theme.warning} onPress={() => onGrade('hard')} />
+                <GradeButton label="普通" color={theme.accent} onPress={() => onGrade('good')} />
+                <GradeButton label="簡単" color={theme.success} onPress={() => onGrade('easy')} />
               </View>
             ) : (
               <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
@@ -192,11 +194,12 @@ function GradeButton({
   color: string;
   onPress: () => void;
 }) {
+  const theme = useTheme();
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.gradeButton, { backgroundColor: color }, pressed && styles.pressed]}>
-      <ThemedText type="smallBold" style={styles.gradeLabel}>
+      <ThemedText type="smallBold" style={{ color: theme.onAccent }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -264,6 +267,7 @@ function Field({
   onChange: (v: string) => void;
   placeholder: string;
 }) {
+  const theme = useTheme();
   return (
     <View style={styles.field}>
       <ThemedText type="small" themeColor="textSecondary">
@@ -274,8 +278,8 @@ function Field({
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor="#8b93a5"
-          style={styles.input}
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { color: theme.text }]}
         />
       </ThemedView>
     </View>
@@ -352,9 +356,6 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     alignItems: 'center',
   },
-  gradeLabel: {
-    color: '#ffffff',
-  },
   hint: {
     textAlign: 'center',
   },
@@ -393,7 +394,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
     fontSize: 15,
-    color: '#888f9c',
   },
   modalButtons: {
     flexDirection: 'row',

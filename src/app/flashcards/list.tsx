@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
 import { speak } from '@/lib/speech';
 import { todayStr, type CardState } from '@/lib/srs';
@@ -25,16 +26,27 @@ interface Row {
   custom: boolean;
 }
 
-function statusOf(state: CardState | undefined, today: string): { label: string; color: string } {
-  if (!state) return { label: '未学習', color: '#8b93a5' };
-  if (state.interval >= 21) return { label: '定着', color: '#2fa96c' };
-  if (state.due <= today) return { label: '復習待ち', color: '#e08b1e' };
-  return { label: '学習中', color: '#3c87f7' };
+type WordStatus = 'untouched' | 'mastered' | 'due' | 'learning';
+
+function statusOf(state: CardState | undefined, today: string): { label: string; status: WordStatus } {
+  if (!state) return { label: '未学習', status: 'untouched' };
+  if (state.interval >= 21) return { label: '定着', status: 'mastered' };
+  if (state.due <= today) return { label: '復習待ち', status: 'due' };
+  return { label: '学習中', status: 'learning' };
 }
 
 export default function WordListScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const today = todayStr();
+
+  // 学習ステータス → テーマカラーの対応
+  const statusColors: Record<WordStatus, string> = {
+    untouched: theme.textSecondary,
+    mastered: theme.success,
+    due: theme.warning,
+    learning: theme.accent,
+  };
   const [query, setQuery] = useState('');
   const [progress, setProgress] = useState<ProgressMap>({});
   const [customWords, setCustomWords] = useState<CustomWord[]>([]);
@@ -93,10 +105,10 @@ export default function WordListScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder="単語・意味で検索..."
-            placeholderTextColor="#8b93a5"
+            placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
           />
         </ThemedView>
 
@@ -116,7 +128,7 @@ export default function WordListScreen() {
                     {row.meaning}
                   </ThemedText>
                 </View>
-                <ThemedText type="small" style={{ color: status.color }}>
+                <ThemedText type="small" style={{ color: statusColors[status.status] }}>
                   {status.label}
                 </ThemedText>
                 <Pressable onPress={() => speak(row.word)} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
@@ -158,7 +170,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
     fontSize: 15,
-    color: '#888f9c',
   },
   listContent: {
     gap: Spacing.one + 2,

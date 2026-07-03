@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export interface BarDatum {
   label: string;
@@ -14,7 +15,7 @@ export interface BarDatum {
  */
 export function BarChart({
   data,
-  color = '#3c87f7',
+  color,
   height = 96,
   maxValue,
 }: {
@@ -23,6 +24,8 @@ export function BarChart({
   height?: number;
   maxValue?: number;
 }) {
+  const theme = useTheme();
+  const barColor = color ?? theme.accent;
   const max = Math.max(1, maxValue ?? Math.max(...data.map((d) => d.value)));
   // ラベルは最大7個程度に間引く
   const labelStep = Math.max(1, Math.ceil(data.length / 7));
@@ -36,7 +39,7 @@ export function BarChart({
               <View
                 style={[
                   styles.bar,
-                  { height: Math.max(3, (d.value / max) * height), backgroundColor: color },
+                  { height: Math.max(3, (d.value / max) * height), backgroundColor: barColor },
                 ]}
               />
             )}

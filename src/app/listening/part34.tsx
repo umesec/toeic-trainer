@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { LISTENING_SETS } from '@/data/part34';
 import type { ListeningSet } from '@/data/types';
 import { setQuestionId } from '@/lib/mistakes';
@@ -68,6 +69,7 @@ export default function Part34Screen() {
 }
 
 function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
+  const theme = useTheme();
   const [answers, setAnswers] = useState<(number | null)[]>(Array(set.questions.length).fill(null));
   const [showScript, setShowScript] = useState(false);
 
@@ -113,6 +115,8 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
             {q.choices.map((choice, ci) => {
               const isAnswer = ci === q.answer;
               const isPicked = ci === picked;
+              const showCorrect = done && isAnswer;
+              const showWrong = done && isPicked && !isAnswer;
               return (
                 <Pressable
                   key={choice}
@@ -127,11 +131,17 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
                   }}
                   style={({ pressed }) => [
                     styles.choice,
-                    done && isAnswer && styles.choiceCorrect,
-                    done && isPicked && !isAnswer && styles.choiceWrong,
+                    showCorrect && [styles.choiceMark, { borderColor: theme.success }],
+                    showWrong && [styles.choiceMark, { borderColor: theme.danger }],
                     pressed && !done && styles.pressed,
                   ]}>
-                  <ThemedView type="backgroundElement" style={styles.choiceInner}>
+                  <ThemedView
+                    type="backgroundElement"
+                    style={[
+                      styles.choiceInner,
+                      showCorrect && { backgroundColor: theme.successBg },
+                      showWrong && { backgroundColor: theme.dangerBg },
+                    ]}>
                     <ThemedText type="small">
                       ({String.fromCharCode(65 + ci)}) {choice}
                       {done && isAnswer ? '  ✔' : ''}
@@ -212,13 +222,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
-  choiceCorrect: {
+  choiceMark: {
     borderWidth: 2,
-    borderColor: '#2fa96c',
-  },
-  choiceWrong: {
-    borderWidth: 2,
-    borderColor: '#e5484d',
   },
   pressed: {
     opacity: 0.6,

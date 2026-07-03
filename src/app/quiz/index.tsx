@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { QUIZZES } from '@/data/quizzes';
+import { useFeatureColors, useTheme } from '@/hooks/use-theme';
 import type { QuizQuestion, QuizTag } from '@/data/types';
 import { todayStr } from '@/lib/srs';
 import {
@@ -32,6 +33,8 @@ type Phase = 'setup' | 'playing' | 'result';
 
 export default function QuizScreen() {
   const router = useRouter();
+  const theme = useTheme();
+  const features = useFeatureColors();
   const today = todayStr();
   const [phase, setPhase] = useState<Phase>('setup');
   const [tag, setTag] = useState<TagFilter>('全部');
@@ -134,7 +137,7 @@ export default function QuizScreen() {
                 </Card>
               </View>
 
-              <Card style={styles.mockCard}>
+              <Card tint={features.mock.tint}>
                 <ThemedText type="smallBold">⏱ 模試・実力測定</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   ミニ模試（10分・15問）と、推定スコア付きの実力測定モード（40分・65問、Part 2〜7を横断）が受けられます。
@@ -164,13 +167,17 @@ export default function QuizScreen() {
                       onPress={() => pick(i)}
                       style={({ pressed }) => [
                         styles.choice,
-                        answered && isAnswer && styles.choiceCorrect,
-                        answered && isPicked && !isAnswer && styles.choiceWrong,
+                        answered && isAnswer && [styles.choiceJudged, { borderColor: theme.success }],
+                        answered && isPicked && !isAnswer && [styles.choiceJudged, { borderColor: theme.danger }],
                         pressed && !answered && styles.pressed,
                       ]}>
                       <ThemedView
-                        type={answered && (isAnswer || isPicked) ? 'background' : 'backgroundElement'}
-                        style={styles.choiceInner}>
+                        type="backgroundElement"
+                        style={[
+                          styles.choiceInner,
+                          answered && isAnswer && { backgroundColor: theme.successBg },
+                          answered && isPicked && !isAnswer && { backgroundColor: theme.dangerBg },
+                        ]}>
                         <ThemedText type="default">
                           ({String.fromCharCode(65 + i)}) {choice}
                           {answered && isAnswer ? '  ✔' : ''}
@@ -227,6 +234,7 @@ export default function QuizScreen() {
 
 /** 分野別の累計正答率と最弱分野を表示する */
 function WeaknessCard({ tagStats }: { tagStats: TagStatsMap }) {
+  const theme = useTheme();
   const rows = TAGS.filter((t) => t !== '全部')
     .map((t) => ({ tag: t, stats: tagStats[t] }))
     .filter((r) => r.stats && r.stats.answered > 0)
@@ -247,7 +255,7 @@ function WeaknessCard({ tagStats }: { tagStats: TagStatsMap }) {
         </View>
       ))}
       {rows.length >= 2 && (
-        <ThemedText type="small" style={styles.weakHint}>
+        <ThemedText type="small" style={{ color: theme.warning }}>
           💡 「{weakest.tag}」が最も苦手です。分野を絞って集中的に解きましょう。
         </ThemedText>
       )}
@@ -261,10 +269,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  mockCard: {
-    borderWidth: 1.5,
-    borderColor: '#3c87f7',
-  },
   linkRow: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -276,9 +280,6 @@ const styles = StyleSheet.create({
   weakRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  weakHint: {
-    color: '#e08b1e',
   },
   safeArea: {
     flex: 1,
@@ -306,13 +307,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.three,
   },
-  choiceCorrect: {
+  // 正誤の色（success/danger）は render 時にテーマから適用する
+  choiceJudged: {
     borderWidth: 2,
-    borderColor: '#2fa96c',
-  },
-  choiceWrong: {
-    borderWidth: 2,
-    borderColor: '#e5484d',
   },
   pressed: {
     opacity: 0.6,

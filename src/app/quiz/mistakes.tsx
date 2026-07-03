@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { resolveMistake, type ResolvedMistake } from '@/lib/mistakes';
 import { speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
@@ -123,6 +124,7 @@ function MistakeCard({
   onToggle: () => void;
   onSolved: (correct: boolean) => void;
 }) {
+  const theme = useTheme();
   const { resolved, entry } = item;
   const [picked, setPicked] = useState<number | null>(null);
 
@@ -172,11 +174,17 @@ function MistakeCard({
                 onPress={() => pick(i)}
                 style={({ pressed }) => [
                   styles.choice,
-                  done && isAnswer && styles.choiceCorrect,
-                  done && isPicked && !isAnswer && styles.choiceWrong,
+                  done && isAnswer && [styles.choiceJudged, { borderColor: theme.success }],
+                  done && isPicked && !isAnswer && [styles.choiceJudged, { borderColor: theme.danger }],
                   pressed && !done && styles.pressed,
                 ]}>
-                <ThemedView type="backgroundElement" style={styles.choiceInner}>
+                <ThemedView
+                  type="backgroundElement"
+                  style={[
+                    styles.choiceInner,
+                    done && isAnswer && { backgroundColor: theme.successBg },
+                    done && isPicked && !isAnswer && { backgroundColor: theme.dangerBg },
+                  ]}>
                   <ThemedText type="small">
                     ({String.fromCharCode(65 + i)}) {choice}
                     {done && isAnswer ? '  ✔' : ''}
@@ -252,13 +260,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
-  choiceCorrect: {
+  // 正誤の色（success/danger）は render 時にテーマから適用する
+  choiceJudged: {
     borderWidth: 2,
-    borderColor: '#2fa96c',
-  },
-  choiceWrong: {
-    borderWidth: 2,
-    borderColor: '#e5484d',
   },
   pressed: {
     opacity: 0.6,

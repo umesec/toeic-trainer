@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { SOUND_CHANGE_RULES } from '@/data/soundChanges';
 import type { SoundChangeExample } from '@/data/types';
 import { speak } from '@/lib/speech';
@@ -74,13 +75,14 @@ export default function SoundChangeRuleScreen() {
 }
 
 function ExampleRow({ example }: { example: SoundChangeExample }) {
+  const theme = useTheme();
   const [before, focus, after] = splitByFocus(example.phrase, example.focus);
   return (
     <Card>
       <View style={styles.exampleHeader}>
         <ThemedText type="default" style={styles.phrase}>
           {before}
-          <ThemedText type="default" style={styles.focus}>
+          <ThemedText type="default" style={[styles.focus, { color: theme.accent }]}>
             {focus}
           </ThemedText>
           {after}
@@ -137,7 +139,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   focus: {
-    color: '#3c87f7',
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

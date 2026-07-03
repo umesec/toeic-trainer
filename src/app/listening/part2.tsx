@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { PART2_ITEMS } from '@/data/part2';
 import { speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
@@ -17,6 +18,7 @@ const LABELS = ['A', 'B', 'C'] as const;
 
 export default function Part2Screen() {
   const router = useRouter();
+  const theme = useTheme();
   const [order] = useState(() => shuffle(PART2_ITEMS));
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -71,17 +73,25 @@ export default function Part2Screen() {
               const isAnswer = i === item.answer;
               const isPicked = i === selected;
               const done = selected !== null;
+              const showCorrect = done && isAnswer;
+              const showWrong = done && isPicked && !isAnswer;
               return (
                 <View key={label} style={styles.choiceRow}>
                   <Pressable
                     onPress={() => pick(i)}
                     style={({ pressed }) => [
                       styles.choice,
-                      done && isAnswer && styles.choiceCorrect,
-                      done && isPicked && !isAnswer && styles.choiceWrong,
+                      showCorrect && [styles.choiceMark, { borderColor: theme.success }],
+                      showWrong && [styles.choiceMark, { borderColor: theme.danger }],
                       pressed && !done && styles.pressed,
                     ]}>
-                    <ThemedView type="backgroundElement" style={styles.choiceInner}>
+                    <ThemedView
+                      type="backgroundElement"
+                      style={[
+                        styles.choiceInner,
+                        showCorrect && { backgroundColor: theme.successBg },
+                        showWrong && { backgroundColor: theme.dangerBg },
+                      ]}>
                       <ThemedText type="default">
                         ({label}) {done ? item.choices[i] : '？？？'}
                         {done && isAnswer ? '  ✔' : ''}
@@ -157,13 +167,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.three,
   },
-  choiceCorrect: {
+  choiceMark: {
     borderWidth: 2,
-    borderColor: '#2fa96c',
-  },
-  choiceWrong: {
-    borderWidth: 2,
-    borderColor: '#e5484d',
   },
   replay: {
     padding: Spacing.one,

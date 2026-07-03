@@ -13,6 +13,7 @@ import { PART6_SETS } from '@/data/part6';
 import { PART7_SETS } from '@/data/part7';
 import { QUIZZES } from '@/data/quizzes';
 import type { ListeningSet, Part2Item, Part6Set, Part7Set, QuizQuestion } from '@/data/types';
+import { useFeatureColors, useTheme } from '@/hooks/use-theme';
 import { setQuestionId } from '@/lib/mistakes';
 import { estimateScore } from '@/lib/score';
 import { pitchForSpeaker, speak, speakLines, stopSpeech } from '@/lib/speech';
@@ -59,6 +60,8 @@ type SectionKind = (typeof SECTION_ORDER)[number];
 
 export default function MockTestScreen() {
   const router = useRouter();
+  const theme = useTheme();
+  const features = useFeatureColors();
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
   const [plan, setPlan] = useState<TestPlan | null>(null);
   const [sectionIdx, setSectionIdx] = useState(0);
@@ -220,7 +223,7 @@ export default function MockTestScreen() {
                 <AppButton label="ミニ模試をはじめる" onPress={() => start('mini')} />
               </Card>
 
-              <Card style={styles.fullCard}>
+              <Card tint={features.mock.tint}>
                 <ThemedText type="smallBold">📈 実力測定モード（約40分・65問）</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   L: Part 2×13問 + Part 3/4×5セット（15問）{'\n'}
@@ -253,7 +256,7 @@ export default function MockTestScreen() {
             <>
               <View style={styles.rowBetween}>
                 <ThemedText type="smallBold">{sectionTitle(plan, kind, itemIdx)}</ThemedText>
-                <ThemedText type="smallBold" style={remaining < 60 ? styles.timeWarning : styles.accent}>
+                <ThemedText type="smallBold" style={{ color: remaining < 60 ? theme.danger : theme.accent }}>
                   ⏱ {mmss}
                 </ThemedText>
               </View>
@@ -445,6 +448,7 @@ function SetSection({
   onNext: () => void;
   extra?: React.ReactNode;
 }) {
+  const theme = useTheme();
   const allAnswered = picked.every((p) => p !== null);
   return (
     <>
@@ -466,7 +470,7 @@ function SetSection({
               style={({ pressed }) => [pressed && styles.pressed]}>
               <ThemedView
                 type={picked[qi] === ci ? 'backgroundSelected' : 'backgroundElement'}
-                style={[styles.choiceInner, picked[qi] === ci && styles.choiceSelected]}>
+                style={[styles.choiceInner, picked[qi] === ci && [styles.choiceSelected, { borderColor: theme.accent }]]}>
                 <ThemedText type="small">
                   ({String.fromCharCode(65 + ci)}) {choice}
                 </ThemedText>
@@ -567,6 +571,7 @@ function ResultView({
   onRetry: () => void;
   onBack: () => void;
 }) {
+  const theme = useTheme();
   const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, answers);
   const estimated = plan.mode === 'full' ? estimateScore(listening, listeningTotal, reading, readingTotal) : null;
   const review = buildReview(plan, answers);
@@ -580,7 +585,7 @@ function ResultView({
           <ThemedText type="small" themeColor="textSecondary">
             推定スコア
           </ThemedText>
-          <ThemedText type="title" style={styles.accent}>
+          <ThemedText type="title" style={{ color: theme.accent }}>
             {estimated.total}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
@@ -648,20 +653,10 @@ const styles = StyleSheet.create({
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
   },
-  fullCard: {
-    borderWidth: 1.5,
-    borderColor: '#3c87f7',
-  },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  accent: {
-    color: '#3c87f7',
-  },
-  timeWarning: {
-    color: '#e5484d',
   },
   choices: {
     gap: Spacing.two,
@@ -672,9 +667,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     marginTop: Spacing.one,
   },
+  // 選択中の色（accent）は render 時にテーマから適用する
   choiceSelected: {
     borderWidth: 2,
-    borderColor: '#3c87f7',
   },
   passage: {
     lineHeight: 22,

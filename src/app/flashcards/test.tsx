@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
 import { speak } from '@/lib/speech';
@@ -38,6 +39,7 @@ function buildQuestion(word: Word, pool: Word[], mode: Mode): TestQuestion {
 
 export default function WordTestScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const today = todayStr();
   const [mode, setMode] = useState<Mode>('e2j');
   const [session, setSession] = useState<TestQuestion[] | null>(null);
@@ -132,17 +134,25 @@ export default function WordTestScreen() {
                   const done = picked !== null;
                   const isAnswer = i === question.answer;
                   const isPicked = i === picked;
+                  const showCorrect = done && isAnswer;
+                  const showWrong = done && isPicked && !isAnswer;
                   return (
                     <Pressable
                       key={choice}
                       onPress={() => pick(i)}
                       style={({ pressed }) => [
                         styles.choice,
-                        done && isAnswer && styles.choiceCorrect,
-                        done && isPicked && !isAnswer && styles.choiceWrong,
+                        showCorrect && [styles.choiceMark, { borderColor: theme.success }],
+                        showWrong && [styles.choiceMark, { borderColor: theme.danger }],
                         pressed && !done && styles.pressed,
                       ]}>
-                      <ThemedView type="backgroundElement" style={styles.choiceInner}>
+                      <ThemedView
+                        type="backgroundElement"
+                        style={[
+                          styles.choiceInner,
+                          showCorrect && { backgroundColor: theme.successBg },
+                          showWrong && { backgroundColor: theme.dangerBg },
+                        ]}>
                         <ThemedText type="default">{choice}</ThemedText>
                       </ThemedView>
                     </Pressable>
@@ -231,13 +241,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.three,
   },
-  choiceCorrect: {
+  choiceMark: {
     borderWidth: 2,
-    borderColor: '#2fa96c',
-  },
-  choiceWrong: {
-    borderWidth: 2,
-    borderColor: '#e5484d',
   },
   resultCard: {
     alignItems: 'center',

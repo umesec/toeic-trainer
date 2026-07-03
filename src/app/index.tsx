@@ -4,11 +4,22 @@ import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarChart, type BarDatum } from '@/components/bar-chart';
+import { FeatureTile } from '@/components/feature-tile';
+import { HeroCard } from '@/components/hero-card';
+import { ProgressBar } from '@/components/progress-bar';
 import { SettingsModal } from '@/components/settings-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import {
+  BottomTabInset,
+  MaxContentWidth,
+  Radius,
+  Spacing,
+  TopContentInset,
+  type FeatureKey,
+} from '@/constants/theme';
+import { useShadows, useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
 import { setSpeechRateScale } from '@/lib/speech';
 import {
@@ -38,8 +49,29 @@ import {
   type QuizStats,
 } from '@/lib/storage';
 
+const FEATURES: {
+  emoji: string;
+  title: string;
+  subtitle?: string;
+  feature: FeatureKey;
+  href: string;
+}[] = [
+  { emoji: '📚', title: '単語カード', subtitle: 'SRSで効率よく暗記', feature: 'words', href: '/flashcards' },
+  { emoji: '📝', title: 'クイズ', subtitle: 'Part 5 文法・語彙', feature: 'quiz', href: '/quiz' },
+  { emoji: '🎧', title: '音声変化', subtitle: '聞き取れる耳を作る', feature: 'listening', href: '/listening' },
+  { emoji: '✍️', title: 'ディクテーション', subtitle: '書き取りで定着', feature: 'listening', href: '/listening/dictation' },
+  { emoji: '🗣️', title: 'Part 3/4 会話', subtitle: '長文リスニング', feature: 'listening', href: '/listening/part34' },
+  { emoji: '📰', title: 'Part 6/7 読解', subtitle: '長文問題', feature: 'reading', href: '/quiz/part7' },
+  { emoji: '🎙️', title: 'Part 2 応答', subtitle: '音声のみで挑戦', feature: 'listening', href: '/listening/part2' },
+  { emoji: '📈', title: '模試・実力測定', subtitle: '推定スコアを測る', feature: 'mock', href: '/quiz/mock' },
+  { emoji: '📓', title: '間違いノート', subtitle: '解き直しで克服', feature: 'mistakes', href: '/quiz/mistakes' },
+  { emoji: '🔤', title: '単語テスト', subtitle: '4択で腕試し', feature: 'words', href: '/flashcards/test' },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
+  const theme = useTheme();
+  const shadows = useShadows();
   const today = todayStr();
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
@@ -122,9 +154,20 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.titleRow}>
-            <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
-            <Pressable onPress={() => setShowSettings(true)} style={({ pressed }) => pressed && styles.dimmed}>
-              <ThemedText type="subtitle">⚙️</ThemedText>
+            <View>
+              <ThemedText type="small" themeColor="textSecondary">
+                こんにちは 👋
+              </ThemedText>
+              <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
+            </View>
+            <Pressable
+              onPress={() => setShowSettings(true)}
+              style={({ pressed }) => pressed && styles.dimmed}>
+              <ThemedView
+                type="backgroundElement"
+                style={[styles.settingsButton, shadows.card]}>
+                <ThemedText style={styles.settingsIcon}>⚙️</ThemedText>
+              </ThemedView>
             </Pressable>
           </View>
 
@@ -137,64 +180,64 @@ export default function HomeScreen() {
               onEdit={() => setShowPlanModal(true)}
             />
           ) : (
-            <Card style={styles.centerCard}>
-              <ThemedText type="smallBold">🎯 目標を設定しよう</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
+            <HeroCard style={styles.heroEmpty}>
+              <ThemedText type="smallBold" style={styles.heroTitle}>
+                🎯 目標を設定しよう
+              </ThemedText>
+              <ThemedText type="small" style={styles.heroTextDim}>
                 目標スコアと試験日を設定すると、試験日までの学習プログラムと「今日のメニュー」が自動で組まれます。
               </ThemedText>
-              <AppButton label="目標を設定する" onPress={() => setShowPlanModal(true)} />
-            </Card>
+              <Pressable
+                onPress={() => setShowPlanModal(true)}
+                style={({ pressed }) => [styles.heroCta, pressed && styles.dimmed]}>
+                <ThemedText type="smallBold" style={{ color: theme.accent }}>
+                  目標を設定する
+                </ThemedText>
+              </Pressable>
+            </HeroCard>
           )}
 
           {/* 進捗サマリー */}
           <View style={styles.statsRow}>
-            <StatCard label="連続学習" value={`${streakCount}日`} />
+            <StatCard emoji="🔥" label="連続学習" value={`${streakCount}日`} />
             <StatCard
-              label="クイズ正答率"
+              emoji="✅"
+              label="正答率"
               value={
                 quizStats.answered > 0
                   ? `${Math.round((quizStats.correct / quizStats.answered) * 100)}%`
                   : '—'
               }
             />
-            <StatCard label="復習待ち" value={`${dueCount}枚`} />
+            <StatCard emoji="📚" label="復習待ち" value={`${dueCount}枚`} />
           </View>
 
           {/* クイックスタート */}
-          <ThemedText type="smallBold">学習をはじめる</ThemedText>
-          <View style={styles.quickRow}>
-            <AppButton label="📚 単語カード" onPress={() => router.push('/flashcards')} style={styles.quickButton} />
-            <AppButton label="📝 クイズ" onPress={() => router.push('/quiz')} style={styles.quickButton} />
-          </View>
-          <View style={styles.quickRow}>
-            <AppButton label="🎧 音声変化" onPress={() => router.push('/listening')} style={styles.quickButton} />
-            <AppButton label="✍️ ディクテーション" onPress={() => router.push('/listening/dictation')} style={styles.quickButton} />
-          </View>
-          <View style={styles.quickRow}>
-            <AppButton label="🗣️ Part 3/4 会話" onPress={() => router.push('/listening/part34')} style={styles.quickButton} />
-            <AppButton label="📰 Part 6/7 読解" onPress={() => router.push('/quiz/part7')} style={styles.quickButton} />
-          </View>
-          <View style={styles.quickRow}>
-            <AppButton label="🎙️ Part 2 応答問題" onPress={() => router.push('/listening/part2')} style={styles.quickButton} />
-            <AppButton label="📈 模試・実力測定" onPress={() => router.push('/quiz/mock')} style={styles.quickButton} />
-          </View>
-          <View style={styles.quickRow}>
-            <AppButton
-              label={mistakeCount > 0 ? `📓 間違いノート（${mistakeCount}）` : '📓 間違いノート'}
-              onPress={() => router.push('/quiz/mistakes')}
-              style={styles.quickButton}
-            />
-            <AppButton label="🔤 単語テスト" onPress={() => router.push('/flashcards/test')} style={styles.quickButton} />
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            学習をはじめる
+          </ThemedText>
+          <View style={styles.tileGrid}>
+            {FEATURES.map((f) => (
+              <FeatureTile
+                key={f.href + f.title}
+                emoji={f.emoji}
+                title={f.title}
+                subtitle={f.subtitle}
+                feature={f.feature}
+                badge={f.title === '間違いノート' ? mistakeCount : undefined}
+                onPress={() => router.push(f.href as never)}
+              />
+            ))}
           </View>
 
           {/* 学習統計 */}
-          <ThemedText type="smallBold">学習統計</ThemedText>
+          <ThemedText type="smallBold" style={styles.sectionTitle}>
+            学習統計
+          </ThemedText>
           <Card>
-            <ThemedText type="small" themeColor="textSecondary">
-              直近14日の学習量（回答・カード数）
-            </ThemedText>
+            <ThemedText type="smallBold">📊 直近14日の学習量</ThemedText>
             {dailyChart.some((d) => d.value > 0) ? (
-              <BarChart data={dailyChart} />
+              <BarChart data={dailyChart} color={theme.accent} />
             ) : (
               <ThemedText type="small" themeColor="textSecondary">
                 まだデータがありません。今日の学習を始めましょう！
@@ -202,12 +245,10 @@ export default function HomeScreen() {
             )}
           </Card>
           <Card>
-            <ThemedText type="small" themeColor="textSecondary">
-              推定スコアの推移（実力測定モード）
-            </ThemedText>
+            <ThemedText type="smallBold">📈 推定スコアの推移</ThemedText>
             {scoreChart.length > 0 ? (
               <>
-                <BarChart data={scoreChart} color="#2fa96c" maxValue={990} />
+                <BarChart data={scoreChart} color={theme.success} maxValue={990} />
                 <ThemedText type="small" themeColor="textSecondary">
                   最新: {scoreChart[scoreChart.length - 1].value} 点（990点満点スケール）
                 </ThemedText>
@@ -254,6 +295,7 @@ function PlanSummary({
   dayLog: DayLog;
   onEdit: () => void;
 }) {
+  const theme = useTheme();
   const days = daysUntilExam(plan, today);
   const quota = dailyQuota(plan, today);
   const phase = currentPhase(plan, today);
@@ -272,44 +314,63 @@ function PlanSummary({
   }
 
   return (
-    <Card>
-      <View style={styles.planHeader}>
-        <ThemedText type="smallBold">
-          🎯 目標 {plan.targetScore}点（現在 {plan.currentScore}点）
-        </ThemedText>
-        <Pressable onPress={onEdit}>
-          <ThemedText type="linkPrimary">変更</ThemedText>
-        </Pressable>
-      </View>
-      <ThemedText type="default">
-        試験日 {plan.examDate} まで <ThemedText type="smallBold" style={styles.accent}>あと{days}日</ThemedText>
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        現在は「{phase.name}」— {phase.focus}
-      </ThemedText>
-
-      <ThemedText type="smallBold" style={styles.menuTitle}>
-        今日のメニュー（目安 {quota.estMinutes}分）
-      </ThemedText>
-      <MenuRow label="単語カード" done={dayLog.cards} goal={quota.cards} unit="枚" />
-      <MenuRow label="クイズ" done={dayLog.quiz} goal={quota.quiz} unit="問" />
-      <MenuRow label="音声変化・ディクテーション" done={dayLog.listening} goal={quota.listening} unit="回" />
-
-      <ThemedText type="smallBold" style={styles.menuTitle}>
-        学習スケジュール
-      </ThemedText>
-      {phases.map((p) => (
-        <View key={p.id} style={styles.phaseRow}>
-          <ThemedText type="small" style={p.id === phase.id ? styles.accent : undefined}>
-            {p.id === phase.id ? '▶ ' : '　'}
-            {p.name}
+    <>
+      <HeroCard>
+        <View style={styles.planHeader}>
+          <ThemedText type="smallBold" style={styles.heroTitle}>
+            🎯 目標 {plan.targetScore}点
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {p.from} 〜 {p.to}
-          </ThemedText>
+          <View style={styles.heroPill}>
+            <ThemedText type="smallBold" style={styles.heroTitle}>
+              あと{days}日
+            </ThemedText>
+          </View>
         </View>
-      ))}
-    </Card>
+        <ThemedText type="small" style={styles.heroTextDim}>
+          現在 {plan.currentScore}点 ・ 試験日 {plan.examDate}
+        </ThemedText>
+        <ThemedText type="small" style={styles.heroTextDim}>
+          「{phase.name}」— {phase.focus}
+        </ThemedText>
+
+        <ThemedText type="smallBold" style={[styles.heroTitle, styles.menuTitle]}>
+          今日のメニュー（目安 {quota.estMinutes}分）
+        </ThemedText>
+        <MenuRow label="単語カード" done={dayLog.cards} goal={quota.cards} unit="枚" />
+        <MenuRow label="クイズ" done={dayLog.quiz} goal={quota.quiz} unit="問" />
+        <MenuRow
+          label="音声変化・ディクテーション"
+          done={dayLog.listening}
+          goal={quota.listening}
+          unit="回"
+        />
+
+        <Pressable
+          onPress={onEdit}
+          style={({ pressed }) => [styles.heroEditButton, pressed && styles.dimmed]}>
+          <ThemedText type="smallBold" style={styles.heroTitle}>
+            プランを変更
+          </ThemedText>
+        </Pressable>
+      </HeroCard>
+
+      <Card>
+        <ThemedText type="smallBold">学習スケジュール</ThemedText>
+        {phases.map((p) => (
+          <View key={p.id} style={styles.phaseRow}>
+            <ThemedText
+              type="small"
+              style={p.id === phase.id ? { color: theme.accent, fontWeight: '700' } : undefined}>
+              {p.id === phase.id ? '▶ ' : '　'}
+              {p.name}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {p.from} 〜 {p.to}
+            </ThemedText>
+          </View>
+        ))}
+      </Card>
+    </>
   );
 }
 
@@ -326,24 +387,36 @@ function MenuRow({
 }) {
   const achieved = done >= goal;
   return (
-    <View style={styles.menuRow}>
-      <ThemedText type="small">
-        {achieved ? '✅' : '⬜'} {label}
-      </ThemedText>
-      <ThemedText type="small" themeColor={achieved ? 'text' : 'textSecondary'}>
-        {Math.min(done, goal)} / {goal} {unit}
-      </ThemedText>
+    <View style={styles.menuBlock}>
+      <View style={styles.menuRow}>
+        <ThemedText type="small" style={styles.heroTitle}>
+          {achieved ? '✅' : '⬜'} {label}
+        </ThemedText>
+        <ThemedText type="small" style={achieved ? styles.heroTitle : styles.heroTextDim}>
+          {Math.min(done, goal)} / {goal} {unit}
+        </ThemedText>
+      </View>
+      <ProgressBar
+        value={done}
+        max={goal}
+        height={6}
+        color="#FFFFFF"
+        trackColor="rgba(255,255,255,0.3)"
+      />
     </View>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ emoji, label, value }: { emoji: string; label: string; value: string }) {
   return (
     <Card style={styles.statCard}>
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText style={styles.statEmoji}>{emoji}</ThemedText>
+      <ThemedText type="smallBold" style={styles.statValue}>
+        {value}
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.statLabel}>
         {label}
       </ThemedText>
-      <ThemedText type="smallBold">{value}</ThemedText>
     </Card>
   );
 }
@@ -372,6 +445,7 @@ function PlanModal({
   onSave: (p: StudyPlan) => void;
   onClear: () => void;
 }) {
+  const theme = useTheme();
   const [target, setTarget] = useState<number>(plan?.targetScore ?? 700);
   const [current, setCurrent] = useState<number>(plan?.currentScore ?? 500);
   const [examDate, setExamDate] = useState<string>(plan?.examDate ?? addDays(today, 90));
@@ -431,24 +505,24 @@ function PlanModal({
                 );
               })}
             </View>
-            <ThemedView type="backgroundElement" style={styles.inputWrap}>
+            <ThemedView type="backgroundSelected" style={styles.inputWrap}>
               <TextInput
                 value={examDate}
                 onChangeText={setExamDate}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor="#8b93a5"
+                placeholderTextColor={theme.textSecondary}
                 autoCapitalize="none"
                 autoCorrect={false}
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
               />
             </ThemedView>
             {!validDate && (
-              <ThemedText type="small" style={styles.error}>
+              <ThemedText type="small" style={{ color: theme.danger }}>
                 試験日は今日より後の YYYY-MM-DD 形式で入力してください
               </ThemedText>
             )}
             {validDate && target <= current && (
-              <ThemedText type="small" style={styles.error}>
+              <ThemedText type="small" style={{ color: theme.danger }}>
                 目標スコアは現在のスコアより高く設定してください
               </ThemedText>
             )}
@@ -493,19 +567,66 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 20,
+    lineHeight: 26,
+  },
   dimmed: {
     opacity: 0.6,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    lineHeight: 26,
+  },
+  /* ヒーローカード */
+  heroEmpty: {
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+  },
+  heroTextDim: {
+    color: 'rgba(255,255,255,0.85)',
+  },
+  heroCta: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: Spacing.three - 4,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Radius.full,
+    marginTop: Spacing.one,
+  },
+  heroPill: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.full,
+  },
+  heroEditButton: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.6)',
+    borderRadius: Radius.full,
+    paddingVertical: Spacing.one + 2,
+    alignItems: 'center',
+    marginTop: Spacing.two,
   },
   planHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  accent: {
-    color: '#3c87f7',
-  },
   menuTitle: {
     marginTop: Spacing.two,
+  },
+  menuBlock: {
+    gap: Spacing.one,
   },
   menuRow: {
     flexDirection: 'row',
@@ -515,6 +636,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  /* 統計 */
   statsRow: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -522,15 +644,27 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
-  quickRow: {
+  statEmoji: {
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  statValue: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  statLabel: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  /* タイルグリッド */
+  tileGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
-  quickButton: {
-    flex: 1,
-  },
+  /* モーダル */
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -539,7 +673,7 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   modalBody: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.lg,
     width: '100%',
     maxWidth: 480,
     maxHeight: '85%',
@@ -555,16 +689,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.two,
   },
   inputWrap: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.sm,
   },
   input: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
     fontSize: 15,
-    color: '#888f9c',
-  },
-  error: {
-    color: '#e5484d',
   },
   modalButtons: {
     flexDirection: 'row',
