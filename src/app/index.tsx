@@ -339,13 +339,14 @@ function PlanSummary({
         <ThemedText type="smallBold" style={[styles.heroTitle, styles.menuTitle]}>
           今日のメニュー（目安 {quota.estMinutes}分）
         </ThemedText>
-        <MenuRow label="単語カード" done={dayLog.cards} goal={quota.cards} unit="枚" />
-        <MenuRow label="クイズ" done={dayLog.quiz} goal={quota.quiz} unit="問" />
+        <MenuRow label="単語カード" done={dayLog.cards} goal={quota.cards} unit="枚" href="/flashcards" />
+        <MenuRow label="クイズ" done={dayLog.quiz} goal={quota.quiz} unit="問" href="/quiz" />
         <MenuRow
           label="音声変化・ディクテーション"
           done={dayLog.listening}
           goal={quota.listening}
           unit="回"
+          href="/listening"
         />
 
         <Pressable
@@ -382,22 +383,32 @@ function MenuRow({
   done,
   goal,
   unit,
+  href,
 }: {
   label: string;
   done: number;
   goal: number;
   unit: string;
+  href: string;
 }) {
+  const router = useRouter();
   const achieved = done >= goal;
   return (
-    <View style={styles.menuBlock}>
+    <Pressable
+      onPress={() => router.push(href as never)}
+      style={({ pressed }) => [styles.menuBlock, pressed && styles.menuBlockPressed]}>
       <View style={styles.menuRow}>
         <ThemedText type="small" style={styles.heroTitle}>
           {achieved ? '✅' : '⬜'} {label}
         </ThemedText>
-        <ThemedText type="small" style={achieved ? styles.heroTitle : styles.heroTextDim}>
-          {Math.min(done, goal)} / {goal} {unit}
-        </ThemedText>
+        <View style={styles.menuRight}>
+          <ThemedText type="small" style={achieved ? styles.heroTitle : styles.heroTextDim}>
+            {Math.min(done, goal)} / {goal} {unit}
+          </ThemedText>
+          <ThemedText type="smallBold" style={styles.heroTitle}>
+            ▶
+          </ThemedText>
+        </View>
       </View>
       <ProgressBar
         value={done}
@@ -406,7 +417,7 @@ function MenuRow({
         color="#FFFFFF"
         trackColor="rgba(255,255,255,0.3)"
       />
-    </View>
+    </Pressable>
   );
 }
 
@@ -629,11 +640,25 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
   },
   menuBlock: {
-    gap: Spacing.one,
+    gap: Spacing.one + 2,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.two + 2,
+    paddingHorizontal: Spacing.three,
+  },
+  menuBlockPressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.85,
   },
   menuRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  menuRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   phaseRow: {
     flexDirection: 'row',

@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { StudyPlan } from '@/lib/plan';
+// 注: reminders.ts からの storage 参照は型のみなのでランタイム循環はない
+import { syncReminders } from '@/lib/reminders';
 import { addDays, type CardState } from '@/lib/srs';
 
 const KEYS = {
@@ -155,6 +157,21 @@ export async function loadDayLog(today: string): Promise<DayLog> {
   return map[today] ?? { ...EMPTY_DAY };
 }
 
+let reminderTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 学習記録のたびに呼び、リマインド通知を最新の消化状況へ同期する。
+ * クイズ連答などの連続呼び出しをデバウンスでまとめる。
+ * どのタブで学習してもホームに戻らずに通知が更新されるよう、bumpDaily に組み込む。
+ */
+function scheduleReminderSync(today: string) {
+  if (reminderTimer) clearTimeout(reminderTimer);
+  reminderTimer = setTimeout(async () => {
+    const [plan, settings, log] = await Promise.all([loadPlan(), loadSettings(), loadDayLog(today)]);
+    syncReminders(settings.remindEnabled, plan, log).catch(() => {});
+  }, 2500);
+}
+
 /** 学習アクションのたびに該当カウンタを加算する */
 export async function bumpDaily(today: string, field: keyof DayLog, n = 1): Promise<DayLog> {
   const map = await getJSON<DailyLogMap>(KEYS.dailyLog, {});
@@ -162,6 +179,7 @@ export async function bumpDaily(today: string, field: keyof DayLog, n = 1): Prom
   day[field] += n;
   map[today] = day;
   await setJSON(KEYS.dailyLog, map);
+  scheduleReminderSync(today);
   return day;
 }
 
