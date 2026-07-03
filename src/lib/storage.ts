@@ -208,9 +208,11 @@ export async function clearMistakes(): Promise<void> {
 export interface AppSettings {
   /** 読み上げ速度の倍率（0.8 / 1.0 / 1.2） */
   speechRateScale: number;
+  /** 今日のメニュー未消化時の19時リマインド通知 */
+  remindEnabled: boolean;
 }
 
-const DEFAULT_SETTINGS: AppSettings = { speechRateScale: 1.0 };
+const DEFAULT_SETTINGS: AppSettings = { speechRateScale: 1.0, remindEnabled: true };
 
 export const loadSettings = async (): Promise<AppSettings> => ({
   ...DEFAULT_SETTINGS,

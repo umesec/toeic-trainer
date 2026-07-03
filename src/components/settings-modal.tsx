@@ -34,6 +34,7 @@ export function SettingsModal({
 }) {
   const theme = useTheme();
   const [rate, setRate] = useState(1.0);
+  const [remind, setRemind] = useState(true);
   const [exported, setExported] = useState('');
   const [copied, setCopied] = useState(false);
   const [importText, setImportText] = useState('');
@@ -42,7 +43,10 @@ export function SettingsModal({
 
   useEffect(() => {
     if (!visible) return;
-    loadSettings().then((s) => setRate(s.speechRateScale));
+    loadSettings().then((s) => {
+      setRate(s.speechRateScale);
+      setRemind(s.remindEnabled);
+    });
     setExported('');
     setCopied(false);
     setImportText('');
@@ -53,8 +57,15 @@ export function SettingsModal({
   const changeRate = (value: number) => {
     setRate(value);
     setSpeechRateScale(value);
-    saveSettings({ speechRateScale: value });
+    saveSettings({ speechRateScale: value, remindEnabled: remind });
     speak('This is a sample sentence.');
+  };
+
+  const changeRemind = (value: boolean) => {
+    setRemind(value);
+    saveSettings({ speechRateScale: rate, remindEnabled: value });
+    // 通知スケジュールの同期はホームの reload（onDataChanged）に任せる
+    onDataChanged();
   };
 
   const doExport = async () => {
@@ -107,6 +118,17 @@ export function SettingsModal({
             </View>
             <ThemedText type="small" themeColor="textSecondary">
               選ぶとサンプル音声が流れます。すべての再生（🐢ゆっくりを含む）に適用されます。
+            </ThemedText>
+
+            <ThemedText type="smallBold" style={styles.sectionTitle}>
+              リマインド通知
+            </ThemedText>
+            <View style={styles.chipRow}>
+              <Chip label="ON" selected={remind} onPress={() => changeRemind(true)} />
+              <Chip label="OFF" selected={!remind} onPress={() => changeRemind(false)} />
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              学習プラン設定中、「今日のメニュー」が未消化のまま19時になると通知でお知らせします。
             </ThemedText>
 
             <ThemedText type="smallBold" style={styles.sectionTitle}>

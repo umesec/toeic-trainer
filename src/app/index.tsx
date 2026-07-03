@@ -31,6 +31,7 @@ import {
   TARGET_SCORES,
   type StudyPlan,
 } from '@/lib/plan';
+import { syncReminders } from '@/lib/reminders';
 import { addDays, isDue, todayStr } from '@/lib/srs';
 import {
   clearPlan,
@@ -108,6 +109,8 @@ export default function HomeScreen() {
     setMistakeCount(mistakes.length);
     // 設定の読み上げ速度をTTSに反映（アプリ起動時の初期化を兼ねる）
     setSpeechRateScale(settings.speechRateScale);
+    // 19時リマインド通知を最新の消化状況に同期（失敗しても画面には影響させない）
+    syncReminders(settings.remindEnabled, p, log).catch(() => {});
 
     // 直近14日の学習量
     const days: BarDatum[] = [];
