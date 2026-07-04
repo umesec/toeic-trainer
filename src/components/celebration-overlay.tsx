@@ -48,18 +48,20 @@ function CelebrationInner({
   const shadows = useShadows();
   const { width, height } = useWindowDimensions();
 
-  // マウント時に一度だけ粒の配置を決める
-  const particles = useMemo(
-    () =>
-      Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-        emoji: PARTICLES[i % PARTICLES.length],
-        x: Math.random() * width,
-        delay: Math.random() * 500,
-        size: 18 + Math.random() * 14,
-        drift: (Math.random() - 0.5) * 120,
-      })),
-    [width]
-  );
+  // 粒の配置はインデックス由来の決定的擬似乱数で決める（レンダー純度を保つ）
+  const particles = useMemo(() => {
+    const rand = (n: number) => {
+      const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+      emoji: PARTICLES[i % PARTICLES.length],
+      x: rand(i * 4 + 1) * width,
+      delay: rand(i * 4 + 2) * 500,
+      size: 18 + rand(i * 4 + 3) * 14,
+      drift: (rand(i * 4 + 4) - 0.5) * 120,
+    }));
+  }, [width]);
 
   return (
     <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="お祝いを閉じる">
