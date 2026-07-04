@@ -246,7 +246,12 @@ export default function HomeScreen() {
                   : '—'
               }
             />
-            <StatCard emoji="📚" label="復習待ち" value={`${dueCount}枚`} />
+            <StatCard
+              emoji="📚"
+              label="復習待ち"
+              value={`${dueCount}枚`}
+              onPress={() => router.push('/flashcards' as never)}
+            />
           </View>
 
           {/* クイックスタート */}
@@ -469,8 +474,18 @@ function MenuRow({
   );
 }
 
-function StatCard({ emoji, label, value }: { emoji: string; label: string; value: string }) {
-  return (
+function StatCard({
+  emoji,
+  label,
+  value,
+  onPress,
+}: {
+  emoji: string;
+  label: string;
+  value: string;
+  onPress?: () => void;
+}) {
+  const body = (
     <Card style={styles.statCard}>
       <ThemedText style={styles.statEmoji}>{emoji}</ThemedText>
       <ThemedText type="smallBold" style={styles.statValue}>
@@ -480,6 +495,12 @@ function StatCard({ emoji, label, value }: { emoji: string; label: string; value
         {label}
       </ThemedText>
     </Card>
+  );
+  if (!onPress) return <View style={styles.statCell}>{body}</View>;
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.statCell, pressed && styles.dimmed]}>
+      {body}
+    </Pressable>
   );
 }
 
@@ -762,8 +783,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
   },
-  statCard: {
+  statCell: {
     flex: 1,
+  },
+  statCard: {
+    flexGrow: 1,
     alignItems: 'center',
     gap: Spacing.half,
   },

@@ -78,6 +78,9 @@ export default function FlashcardsScreen() {
   const current = queue[0];
   // 「今日の分は完了」カードで新規カードの残数を出すために使う
   const freshRemaining = allWords.filter((w) => !progress[w.id]).length;
+  // キュー内訳（復習=学習履歴のあるカード / 新規=初見カード）
+  const reviewInQueue = queue.filter((w) => progress[w.id]).length;
+  const newInQueue = queue.length - reviewInQueue;
 
   // 単語が切り替わったら必ず表を表示に戻す
   useEffect(() => {
@@ -161,7 +164,10 @@ export default function FlashcardsScreen() {
           <AppButton label="＋ 単語追加" variant="ghost" onPress={() => setShowAdd(true)} />
         </View>
         <ThemedText type="small" themeColor="textSecondary">
-          残り {queue.length} 枚 ・ 今日 {doneCount} 枚学習
+          🕒 復習 {reviewInQueue} 枚 ・ ✨ 新規 {newInQueue} 枚 ・ 今日 {doneCount} 枚学習
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          期限が来た復習カードから優先的に出題されます（SRS間隔反復）
         </ThemedText>
 
         <View style={styles.navRow}>

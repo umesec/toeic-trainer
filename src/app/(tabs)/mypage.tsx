@@ -8,7 +8,7 @@ import { SettingsModal } from '@/components/settings-modal';
 import { StatsContent } from '@/components/stats-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Card } from '@/components/ui';
+import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } from '@/constants/theme';
 import { useShadows, useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
@@ -112,6 +112,12 @@ export default function MyPageScreen() {
                 style={{ color: part5PaceSec <= 20 ? theme.success : theme.warning }}>
                 Part 5 平均 {part5PaceSec.toFixed(1)}秒/問（900点ペースの目安 20秒）
               </ThemedText>
+            )}
+            {counts.due > 0 && (
+              <AppButton
+                label={`🕒 復習待ちの ${counts.due} 枚を復習する`}
+                onPress={() => router.push('/flashcards' as never)}
+              />
             )}
           </Card>
 
