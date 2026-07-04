@@ -8,8 +8,13 @@
     "scheme": "toeictrainer",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.umesec.toeictrainer"
+      "bundleIdentifier": "com.umesec.toeictrainer",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "ja"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,9 +34,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#4C8DF8",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 120
         }
       ]
     ],
