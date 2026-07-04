@@ -28,6 +28,8 @@ import {
 import { shuffle } from '@/lib/util';
 
 const SESSION_SIZE = 10;
+/** Part 5 を900点ペースで解くための1問あたり目標秒数 */
+const PACE_TARGET_SEC = 20;
 const TAGS = ['全部', '品詞', '時制', '前置詞', '語彙', '関係詞', '接続詞'] as const;
 type TagFilter = (typeof TAGS)[number];
 
@@ -48,6 +50,7 @@ export default function QuizScreen() {
   const [tagStats, setTagStats] = useState<TagStatsMap>({});
   const [elapsedSec, setElapsedSec] = useState(0);
   const questionStartMsRef = useRef(Date.now());
+  const sessionMsRef = useRef(0);
 
   // 設定画面に戻るたびに弱点分析を最新化
   useEffect(() => {
@@ -76,6 +79,7 @@ export default function QuizScreen() {
     setIndex(0);
     setScore(0);
     setSelected(null);
+    sessionMsRef.current = 0;
     setPhase('playing');
   };
 
@@ -94,7 +98,9 @@ export default function QuizScreen() {
     });
     recordTagAnswer(question.tag, correct);
     recordPartAnswer('part5', correct);
-    recordPaceAnswer('part5', Date.now() - questionStartMsRef.current);
+    const answerMs = Date.now() - questionStartMsRef.current;
+    sessionMsRef.current += answerMs;
+    recordPaceAnswer('part5', answerMs);
     if (!correct) recordMistake('part5', question.id, today);
     bumpDaily(today, 'quiz');
     recordStudy(today);
@@ -170,9 +176,9 @@ export default function QuizScreen() {
                 </ThemedText>
                 <ThemedText
                   type="small"
-                  themeColor={elapsedSec > 20 ? undefined : 'textSecondary'}
-                  style={elapsedSec > 20 ? { color: theme.warning } : undefined}>
-                  {elapsedSec}秒 / 目安20秒
+                  themeColor={elapsedSec > PACE_TARGET_SEC ? undefined : 'textSecondary'}
+                  style={elapsedSec > PACE_TARGET_SEC ? { color: theme.warning } : undefined}>
+                  {elapsedSec}秒 / 目安{PACE_TARGET_SEC}秒
                 </ThemedText>
               </View>
               <Card>
@@ -240,6 +246,16 @@ export default function QuizScreen() {
               <ThemedText type="default">
                 正答率 {Math.round((score / Math.max(1, session.length)) * 100)}%
               </ThemedText>
+              {(() => {
+                const avgSec = sessionMsRef.current / Math.max(1, session.length) / 1000;
+                const onPace = avgSec <= PACE_TARGET_SEC;
+                return (
+                  <ThemedText type="small" style={{ color: onPace ? theme.success : theme.warning }}>
+                    ⏱ 平均 {avgSec.toFixed(1)}秒/問（900点ペースの目安 {PACE_TARGET_SEC}秒）
+                    {onPace ? ' — 本番ペースOK！' : ' — もう少しテンポを上げましょう'}
+                  </ThemedText>
+                );
+              })()}
               <ThemedText type="small" themeColor="textSecondary">
                 間違えた問題は復習リストに入り、次回のセッションで優先的に出題されます。
               </ThemedText>

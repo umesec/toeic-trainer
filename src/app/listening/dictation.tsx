@@ -9,7 +9,7 @@ import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { DICTATION_ITEMS, SOUND_CHANGE_RULES } from '@/data/soundChanges';
-import { speak } from '@/lib/speech';
+import { accentForId, speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
 import { bumpDaily, recordStudy } from '@/lib/storage';
 import { normalizeSentence, shuffle, splitByFocus } from '@/lib/util';
@@ -54,8 +54,15 @@ export default function DictationScreen() {
           </ThemedText>
 
           <View style={styles.playRow}>
-            <AppButton label="🔊 再生" onPress={() => speak(item.sentence)} />
-            <AppButton label="🐢 ゆっくり" variant="ghost" onPress={() => speak(item.sentence, { slow: true })} />
+            <AppButton
+              label="🔊 再生"
+              onPress={() => speak(item.sentence, { accent: accentForId(item.id) })}
+            />
+            <AppButton
+              label="🐢 ゆっくり"
+              variant="ghost"
+              onPress={() => speak(item.sentence, { slow: true, accent: accentForId(item.id) })}
+            />
           </View>
 
           <ThemedView type="backgroundElement" style={styles.inputWrap}>

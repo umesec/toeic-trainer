@@ -10,12 +10,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
 import { classifyWordCounts, todayStr, type WordMasteryCounts } from '@/lib/srs';
 import { loadCustomWords, loadMistakes, loadPaceStats, loadProgress } from '@/lib/storage';
 
 export default function MyPageScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const today = todayStr();
 
   const [counts, setCounts] = useState<WordMasteryCounts>({
@@ -27,6 +29,7 @@ export default function MyPageScreen() {
   const [customWordCount, setCustomWordCount] = useState(0);
   const [mistakeCount, setMistakeCount] = useState(0);
   const [avgPaceSec, setAvgPaceSec] = useState<number | null>(null);
+  const [part5PaceSec, setPart5PaceSec] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     const [progress, customWords, mistakes, paceStats] = await Promise.all([
@@ -45,6 +48,8 @@ export default function MyPageScreen() {
       { ms: 0, count: 0 }
     );
     setAvgPaceSec(totals.count > 0 ? totals.ms / totals.count / 1000 : null);
+    const p5 = paceStats['part5'];
+    setPart5PaceSec(p5 && p5.count > 0 ? p5.totalMs / p5.count / 1000 : null);
   }, [today]);
 
   useFocusEffect(
@@ -80,6 +85,13 @@ export default function MyPageScreen() {
             {avgPaceSec !== null && (
               <ThemedText type="small" themeColor="textSecondary">
                 平均解答時間: 約{avgPaceSec.toFixed(1)}秒/問
+              </ThemedText>
+            )}
+            {part5PaceSec !== null && (
+              <ThemedText
+                type="small"
+                style={{ color: part5PaceSec <= 20 ? theme.success : theme.warning }}>
+                Part 5 平均 {part5PaceSec.toFixed(1)}秒/問（900点ペースの目安 20秒）
               </ThemedText>
             )}
           </Card>

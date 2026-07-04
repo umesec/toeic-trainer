@@ -54,10 +54,10 @@ export function PassagePractice({
   const resolvedPassages: Part7Passage[] = passages ??
     (passage != null ? [{ docType: docType ?? '', text: passage, textJa: passageJa ?? '' }] : []);
 
-  // 文書を開いたら「今日のクイズ学習」としてカウント
+  // 文書を開いたら「今日の読解学習」としてカウント
   useEffect(() => {
     const today = todayStr();
-    bumpDaily(today, 'quiz');
+    bumpDaily(today, 'reading');
     recordStudy(today);
   }, []);
 

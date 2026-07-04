@@ -17,7 +17,7 @@ import type { ListeningSet, Part1Item, Part2Item, Part6Set, Part7Set, QuizQuesti
 import { useFeatureColors, useTheme } from '@/hooks/use-theme';
 import { setQuestionId } from '@/lib/mistakes';
 import { estimateScore } from '@/lib/score';
-import { pitchForSpeaker, speak, speakLines, stopSpeech } from '@/lib/speech';
+import { accentForId, pitchForSpeaker, speak, speakLines, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
 import {
   addMockResult,
@@ -30,13 +30,52 @@ import {
 } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
-type Mode = 'mini' | 'half' | 'full';
+type Mode = 'mini' | 'half' | 'full' | 'exam';
 
-const MODE_CONFIG = {
+interface ModeConfig {
+  label: string;
+  /** 全体一括タイマー（分）。exam では代わりに lMinutes/rMinutes を使う */
+  minutes?: number;
+  /** 本番形式: リスニングセクションの制限時間（分） */
+  lMinutes?: number;
+  /** 本番形式: リーディングセクションの制限時間（分） */
+  rMinutes?: number;
+  p1: number;
+  p2: number;
+  /** Part 3/4 をまとめてサンプリングするセット数（従来モード用） */
+  p34?: number;
+  /** 本番形式: Part 3（会話）/ Part 4（トーク）のセット数を個別指定 */
+  p3Sets?: number;
+  p4Sets?: number;
+  p5: number;
+  p6: number;
+  /** Part 7 をまとめてサンプリングする文書数（従来モード用） */
+  p7?: number;
+  /** 本番形式: シングル/ダブル/トリプルパッセージの文書数を個別指定 */
+  p7Single?: number;
+  p7Double?: number;
+  p7Triple?: number;
+}
+
+const MODE_CONFIG: Record<Mode, ModeConfig> = {
   mini: { label: 'ミニ模試', minutes: 10, p1: 0, p2: 5, p34: 0, p5: 10, p6: 0, p7: 0 },
   half: { label: 'ハーフ模試', minutes: 60, p1: 6, p2: 12, p34: 7, p5: 20, p6: 3, p7: 5 },
   full: { label: '実力測定モード', minutes: 40, p1: 3, p2: 13, p34: 5, p5: 20, p6: 2, p7: 3 },
-} as const;
+  exam: {
+    label: '本番フル模試',
+    lMinutes: 45,
+    rMinutes: 75,
+    p1: 6,
+    p2: 25,
+    p3Sets: 13,
+    p4Sets: 10,
+    p5: 30,
+    p6: 4,
+    p7Single: 10,
+    p7Double: 2,
+    p7Triple: 3,
+  },
+};
 
 const P1_LABELS = ['A', 'B', 'C', 'D'] as const;
 const P2_LABELS = ['A', 'B', 'C'] as const;
@@ -62,6 +101,34 @@ interface Answers {
 
 const SECTION_ORDER = ['part1', 'part2', 'part34', 'part5', 'part6', 'part7'] as const;
 type SectionKind = (typeof SECTION_ORDER)[number];
+
+const isReadingSection = (kind: SectionKind) =>
+  kind === 'part5' || kind === 'part6' || kind === 'part7';
+
+/** Part 3/4: 本番形式なら会話→トークの順で個別数をサンプリング、従来モードは混合プールから */
+function samplePart34(c: ModeConfig): ListeningSet[] {
+  if (c.p3Sets !== undefined || c.p4Sets !== undefined) {
+    return [
+      ...shuffle(LISTENING_SETS.filter((s) => s.part === 3)).slice(0, c.p3Sets ?? 0),
+      ...shuffle(LISTENING_SETS.filter((s) => s.part === 4)).slice(0, c.p4Sets ?? 0),
+    ];
+  }
+  return shuffle(LISTENING_SETS).slice(0, c.p34 ?? 0);
+}
+
+/** Part 7: 本番形式ならシングル→ダブル→トリプルの順でバケット別サンプリング */
+function samplePart7(c: ModeConfig): Part7Set[] {
+  if (c.p7Single !== undefined || c.p7Double !== undefined || c.p7Triple !== undefined) {
+    const bucket = (len: number, n: number) =>
+      shuffle(PART7_SETS.filter((s) => s.passages.length === len)).slice(0, n);
+    return [
+      ...bucket(1, c.p7Single ?? 0),
+      ...bucket(2, c.p7Double ?? 0),
+      ...bucket(3, c.p7Triple ?? 0),
+    ];
+  }
+  return shuffle(PART7_SETS).slice(0, c.p7 ?? 0);
+}
 
 export default function MockTestScreen() {
   const router = useRouter();
@@ -94,22 +161,45 @@ export default function MockTestScreen() {
   }, [phase]);
 
   useEffect(() => {
-    if (remaining <= 0 && phase === 'test') finish();
+    if (remaining > 0 || phase !== 'test') return;
+    // 本番フル模試: リスニングセクションで時間切れになったら
+    // リーディングセクションへ強制移行し、Rの制限時間で再スタートする
+    const c = plan ? MODE_CONFIG[plan.mode] : null;
+    if (c?.rMinutes && kind && !isReadingSection(kind)) {
+      const firstReadingIdx = sections.findIndex((k) => isReadingSection(k));
+      if (firstReadingIdx >= 0) {
+        stopSpeech();
+        setSectionIdx(firstReadingIdx);
+        setItemIdx(0);
+        setRemaining(c.rMinutes * 60);
+        return;
+      }
+    }
+    finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining]);
 
-  // リスニングセクションは設問が変わるたびに自動再生
+  // リスニングセクションは設問が変わるたびに自動再生（本番同様、問題ごとにアクセントが変わる）
   useEffect(() => {
     if (phase !== 'test' || !plan) return;
     if (kind === 'part1') {
       const it = plan.part1[itemIdx];
-      speak(`Number ${itemIdx + 1}. ... A. ${it.statements[0]} ... B. ${it.statements[1]} ... C. ${it.statements[2]} ... D. ${it.statements[3]}`);
+      speak(
+        `Number ${itemIdx + 1}. ... A. ${it.statements[0]} ... B. ${it.statements[1]} ... C. ${it.statements[2]} ... D. ${it.statements[3]}`,
+        { accent: accentForId(it.id) }
+      );
     } else if (kind === 'part2') {
       const it = plan.part2[itemIdx];
-      speak(`Number ${itemIdx + 1}. ${it.question} ... A. ${it.choices[0]} ... B. ${it.choices[1]} ... C. ${it.choices[2]}`);
+      speak(
+        `Number ${itemIdx + 1}. ${it.question} ... A. ${it.choices[0]} ... B. ${it.choices[1]} ... C. ${it.choices[2]}`,
+        { accent: accentForId(it.id) }
+      );
     } else if (kind === 'part34') {
       const set = plan.part34[itemIdx];
-      speakLines(set.script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })));
+      speakLines(
+        set.script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })),
+        { accent: accentForId(set.id) }
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, sectionIdx, itemIdx]);
@@ -120,10 +210,10 @@ export default function MockTestScreen() {
       mode,
       part1: shuffle(PART1_ITEMS).slice(0, c.p1),
       part2: shuffle(PART2_ITEMS).slice(0, c.p2),
-      part34: shuffle(LISTENING_SETS).slice(0, c.p34),
+      part34: samplePart34(c),
       part5: shuffle(QUIZZES).slice(0, c.p5),
       part6: shuffle(PART6_SETS).slice(0, c.p6),
-      part7: shuffle(PART7_SETS).slice(0, c.p7),
+      part7: samplePart7(c),
     };
     answersRef.current = {
       p1: Array(p.part1.length).fill(null),
@@ -136,7 +226,7 @@ export default function MockTestScreen() {
     setPlan(p);
     setSectionIdx(0);
     setItemIdx(0);
-    setRemaining(c.minutes * 60);
+    setRemaining((c.lMinutes ?? c.minutes ?? 0) * 60);
     setPhase('test');
   };
 
@@ -147,6 +237,11 @@ export default function MockTestScreen() {
     if (itemIdx + 1 < count) {
       setItemIdx(itemIdx + 1);
     } else if (sectionIdx + 1 < sections.length) {
+      // 本番フル模試: L→R セクションをまたぐ瞬間にリーディングの制限時間へ切り替える
+      const c = MODE_CONFIG[plan.mode];
+      if (c.rMinutes && !isReadingSection(kind) && isReadingSection(sections[sectionIdx + 1])) {
+        setRemaining(c.rMinutes * 60);
+      }
       setSectionIdx(sectionIdx + 1);
       setItemIdx(0);
     } else {
@@ -195,10 +290,12 @@ export default function MockTestScreen() {
       }
     }
     await bumpDaily(today, 'listening', listeningTotal);
-    await bumpDaily(today, 'quiz', readingTotal);
+    await bumpDaily(today, 'quiz', plan.part5.length);
+    // 読解は「今日のメニュー」に合わせてセット数でカウント
+    await bumpDaily(today, 'reading', plan.part6.length + plan.part7.length);
     await recordStudy(today);
     const estimated =
-      plan.mode === 'full' || plan.mode === 'half'
+      plan.mode === 'full' || plan.mode === 'half' || plan.mode === 'exam'
         ? estimateScore(listening, listeningTotal, reading, readingTotal)
         : undefined;
     await addMockResult({
@@ -256,6 +353,17 @@ export default function MockTestScreen() {
                 <AppButton label="実力測定をはじめる" onPress={() => start('full')} />
               </Card>
 
+              <Card tint={features.mock.tint}>
+                <ThemedText type="smallBold">🏆 本番フル模試（約2時間・200問）</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  L（45分）: Part 1×6問 + Part 2×25問 + Part 3×13セット（39問）+ Part 4×10セット（30問）{'\n'}
+                  R（75分）: Part 5×30問 + Part 6×4文書（16問）+ Part 7×15文書（54問）{'\n'}
+                  本番と同じ問題数・時間配分のフルシミュレーション。リスニング終了後にリーディング75分が始まります。
+                  途中保存はできないため、2時間確保できるタイミングで受験してください。
+                </ThemedText>
+                <AppButton label="本番フル模試をはじめる" onPress={() => start('exam')} />
+              </Card>
+
               {history.length > 0 && (
                 <Card>
                   <ThemedText type="smallBold">過去の結果</ThemedText>
@@ -280,7 +388,7 @@ export default function MockTestScreen() {
               <View style={styles.rowBetween}>
                 <ThemedText type="smallBold">{sectionTitle(plan, kind, itemIdx)}</ThemedText>
                 <ThemedText type="smallBold" style={{ color: remaining < 60 ? theme.danger : theme.accent }}>
-                  ⏱ {mmss}
+                  {MODE_CONFIG[plan.mode].rMinutes ? (isReadingSection(kind) ? 'R ' : 'L ') : ''}⏱ {mmss}
                 </ThemedText>
               </View>
 
@@ -317,7 +425,16 @@ export default function MockTestScreen() {
                   onNext={advance}
                   extra={
                     <>
-                      <AppButton label="🔊 もう一度再生" variant="ghost" onPress={() => speakLines(plan.part34[itemIdx].script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })))} />
+                      <AppButton
+                        label="🔊 もう一度再生"
+                        variant="ghost"
+                        onPress={() =>
+                          speakLines(
+                            plan.part34[itemIdx].script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })),
+                            { accent: accentForId(plan.part34[itemIdx].id) }
+                          )
+                        }
+                      />
                       {plan.part34[itemIdx].chart && <MockChartView chart={plan.part34[itemIdx].chart!} />}
                     </>
                   }
@@ -476,7 +593,12 @@ function Part1Section({ item, onPick }: { item: Part1Item; onPick: (i: number) =
       <AppButton
         label="🔊 もう一度再生"
         variant="ghost"
-        onPress={() => speak(`A. ${item.statements[0]} ... B. ${item.statements[1]} ... C. ${item.statements[2]} ... D. ${item.statements[3]}`)}
+        onPress={() =>
+          speak(
+            `A. ${item.statements[0]} ... B. ${item.statements[1]} ... C. ${item.statements[2]} ... D. ${item.statements[3]}`,
+            { accent: accentForId(item.id) }
+          )
+        }
       />
       <View style={styles.choices}>
         {P1_LABELS.map((label, i) => (
@@ -496,7 +618,11 @@ function Part2Section({ item, onPick }: { item: Part2Item; onPick: (i: number) =
       <AppButton
         label="🔊 もう一度再生"
         variant="ghost"
-        onPress={() => speak(`${item.question} ... A. ${item.choices[0]} ... B. ${item.choices[1]} ... C. ${item.choices[2]}`)}
+        onPress={() =>
+          speak(`${item.question} ... A. ${item.choices[0]} ... B. ${item.choices[1]} ... C. ${item.choices[2]}`, {
+            accent: accentForId(item.id),
+          })
+        }
       />
       <View style={styles.choices}>
         {P2_LABELS.map((label, i) => (
@@ -719,7 +845,10 @@ function ResultView({
   const router = useRouter();
   const theme = useTheme();
   const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, answers);
-  const estimated = plan.mode === 'full' || plan.mode === 'half' ? estimateScore(listening, listeningTotal, reading, readingTotal) : null;
+  const estimated =
+    plan.mode === 'full' || plan.mode === 'half' || plan.mode === 'exam'
+      ? estimateScore(listening, listeningTotal, reading, readingTotal)
+      : null;
   const review = buildReview(plan, answers);
   const nextAction = estimated
     ? buildNextActions(
@@ -745,7 +874,7 @@ function ResultView({
             ±{estimated.margin}点程度の目安　（L {estimated.listening} / R {estimated.reading}）
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            ※ 68問・TTS音声・自作問題による簡易推定です。公式スコアを保証するものではありません。
+            ※ {listeningTotal + readingTotal}問・TTS音声・自作問題による簡易推定です。公式スコアを保証するものではありません。
           </ThemedText>
         </Card>
       )}

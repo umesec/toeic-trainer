@@ -20,7 +20,7 @@ import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } fro
 import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
-import { isDue, newCardState, review, todayStr } from '@/lib/srs';
+import { isDue, newCardState, review, todayStr, type Grade } from '@/lib/srs';
 import {
   bumpDaily,
   loadCustomWords,
@@ -84,7 +84,7 @@ export default function FlashcardsScreen() {
 
   const translateX = useSharedValue(0);
 
-  const gradeAndReset = (grade: 'easy' | 'hard') => {
+  const gradeAndReset = (grade: Grade) => {
     if (!current) return;
     const state = progress[current.id] ?? newCardState(today);
     const next = review(state, grade, today);
@@ -95,7 +95,8 @@ export default function FlashcardsScreen() {
     bumpDaily(today, 'cards');
     setFlipped(false);
     setDoneCount((d) => d + 1);
-    setQueue((q) => (grade === 'hard' ? [...q.slice(1), current] : q.slice(1)));
+    // again/hard は当日中に再挑戦できるようキュー末尾へ回す
+    setQueue((q) => (grade === 'hard' || grade === 'again' ? [...q.slice(1), current] : q.slice(1)));
   };
 
   const pan = Gesture.Pan()
@@ -226,9 +227,25 @@ export default function FlashcardsScreen() {
             </GestureDetector>
 
             {flipped ? (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.swipeHint}>
-                ← 難しい　　　簡単 →
-              </ThemedText>
+              <View style={styles.gradeArea}>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.swipeHint}>
+                  スワイプ: ← 難しい / 簡単 →
+                </ThemedText>
+                <View style={styles.gradeRow}>
+                  <AppButton
+                    label="もう一度"
+                    variant="ghost"
+                    onPress={() => gradeAndReset('again')}
+                    style={styles.gradeButton}
+                  />
+                  <AppButton
+                    label="普通"
+                    variant="ghost"
+                    onPress={() => gradeAndReset('good')}
+                    style={styles.gradeButton}
+                  />
+                </View>
+              </View>
             ) : (
               <ThemedText type="small" themeColor="textSecondary" style={styles.swipeHint}>
                 思い出してからタップして確認
@@ -426,6 +443,17 @@ const styles = StyleSheet.create({
   },
   swipeHint: {
     textAlign: 'center',
+  },
+  gradeArea: {
+    gap: Spacing.two,
+  },
+  gradeRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'center',
+  },
+  gradeButton: {
+    flex: 1,
   },
   doneCard: {
     alignItems: 'center',

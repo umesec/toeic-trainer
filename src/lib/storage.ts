@@ -151,15 +151,18 @@ export interface DayLog {
   cards: number;
   quiz: number;
   listening: number;
+  /** Part 6/7 の読解セット数 */
+  reading: number;
 }
 
 export type DailyLogMap = Record<string, DayLog>;
 
-const EMPTY_DAY: DayLog = { cards: 0, quiz: 0, listening: 0 };
+const EMPTY_DAY: DayLog = { cards: 0, quiz: 0, listening: 0, reading: 0 };
 
 export async function loadDayLog(today: string): Promise<DayLog> {
   const map = await getJSON<DailyLogMap>(KEYS.dailyLog, {});
-  return map[today] ?? { ...EMPTY_DAY };
+  // 保存済みJSONに新フィールド(reading)が無い場合に備えて EMPTY_DAY とマージする
+  return { ...EMPTY_DAY, ...map[today] };
 }
 
 let reminderTimer: ReturnType<typeof setTimeout> | null = null;
@@ -180,7 +183,8 @@ function scheduleReminderSync(today: string) {
 /** 学習アクションのたびに該当カウンタを加算する */
 export async function bumpDaily(today: string, field: keyof DayLog, n = 1): Promise<DayLog> {
   const map = await getJSON<DailyLogMap>(KEYS.dailyLog, {});
-  const day = { ...(map[today] ?? EMPTY_DAY) };
+  // EMPTY_DAY を先に展開し、旧フォーマットの保存データに無いフィールドを 0 で補う
+  const day = { ...EMPTY_DAY, ...map[today] };
   day[field] += n;
   map[today] = day;
   await setJSON(KEYS.dailyLog, map);
@@ -289,9 +293,11 @@ export interface AppSettings {
   speechRateScale: number;
   /** 今日のメニュー未消化時の19時リマインド通知 */
   remindEnabled: boolean;
+  /** リスニング音声のアクセントMIX（米/英/豪をランダムに使い分け。本番と同じ耳を作る） */
+  accentMix: boolean;
 }
 
-const DEFAULT_SETTINGS: AppSettings = { speechRateScale: 1.0, remindEnabled: true };
+const DEFAULT_SETTINGS: AppSettings = { speechRateScale: 1.0, remindEnabled: true, accentMix: true };
 
 export const loadSettings = async (): Promise<AppSettings> => ({
   ...DEFAULT_SETTINGS,

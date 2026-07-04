@@ -10,7 +10,7 @@ import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { PART2_ITEMS } from '@/data/part2';
-import { speak } from '@/lib/speech';
+import { accentForId, speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
 import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
@@ -31,7 +31,8 @@ export default function Part2Screen() {
   /** 質問→A→B→C の順で連続再生 */
   const playAll = () => {
     speak(
-      `${item.question} ... A. ${item.choices[0]} ... B. ${item.choices[1]} ... C. ${item.choices[2]}`
+      `${item.question} ... A. ${item.choices[0]} ... B. ${item.choices[1]} ... C. ${item.choices[2]}`,
+      { accent: accentForId(item.id) }
     );
   };
 
@@ -66,7 +67,11 @@ export default function Part2Screen() {
 
           <View style={styles.playRow}>
             <AppButton label="🔊 問題を再生" onPress={playAll} />
-            <AppButton label="質問のみ" variant="ghost" onPress={() => speak(item.question)} />
+            <AppButton
+              label="質問のみ"
+              variant="ghost"
+              onPress={() => speak(item.question, { accent: accentForId(item.id) })}
+            />
           </View>
 
           <View style={styles.choices}>

@@ -15,7 +15,7 @@ import {
 } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { PART1_ITEMS } from '@/data/part1';
-import { speak } from '@/lib/speech';
+import { accentForId, speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
 import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
@@ -36,7 +36,8 @@ export default function Part1Screen() {
   /** (A)〜(D) の4文を連続再生 */
   const playAll = () => {
     speak(
-      `A. ${item.statements[0]} ... B. ${item.statements[1]} ... C. ${item.statements[2]} ... D. ${item.statements[3]}`
+      `A. ${item.statements[0]} ... B. ${item.statements[1]} ... C. ${item.statements[2]} ... D. ${item.statements[3]}`,
+      { accent: accentForId(item.id) }
     );
   };
 

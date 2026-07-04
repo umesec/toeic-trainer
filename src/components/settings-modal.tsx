@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { AppButton, Chip } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { setSpeechRateScale, speak } from '@/lib/speech';
+import { setAccentMixEnabled, setSpeechRateScale, speak } from '@/lib/speech';
 import {
   exportAll,
   importAll,
@@ -37,6 +37,7 @@ export function SettingsModal({
   const theme = useTheme();
   const [rate, setRate] = useState(1.0);
   const [remind, setRemind] = useState(true);
+  const [accentMix, setAccentMix] = useState(true);
   const [exported, setExported] = useState('');
   const [copied, setCopied] = useState(false);
   const [importText, setImportText] = useState('');
@@ -48,6 +49,7 @@ export function SettingsModal({
     loadSettings().then((s) => {
       setRate(s.speechRateScale);
       setRemind(s.remindEnabled);
+      setAccentMix(s.accentMix);
     });
     setExported('');
     setCopied(false);
@@ -59,15 +61,23 @@ export function SettingsModal({
   const changeRate = (value: number) => {
     setRate(value);
     setSpeechRateScale(value);
-    saveSettings({ speechRateScale: value, remindEnabled: remind });
+    saveSettings({ speechRateScale: value, remindEnabled: remind, accentMix });
     speak('This is a sample sentence.');
   };
 
   const changeRemind = (value: boolean) => {
     setRemind(value);
-    saveSettings({ speechRateScale: rate, remindEnabled: value });
+    saveSettings({ speechRateScale: rate, remindEnabled: value, accentMix });
     // 通知スケジュールの同期はホームの reload（onDataChanged）に任せる
     onDataChanged();
+  };
+
+  const changeAccentMix = (value: boolean) => {
+    setAccentMix(value);
+    setAccentMixEnabled(value);
+    saveSettings({ speechRateScale: rate, remindEnabled: remind, accentMix: value });
+    // ON にしたらサンプルとして英アクセントを一言再生
+    if (value) speak('This is a sample sentence.', { accent: 'UK' });
   };
 
   const doExport = async () => {
@@ -120,6 +130,17 @@ export function SettingsModal({
             </View>
             <ThemedText type="small" themeColor="textSecondary">
               選ぶとサンプル音声が流れます。すべての再生（🐢ゆっくりを含む）に適用されます。
+            </ThemedText>
+
+            <ThemedText type="smallBold" style={styles.sectionTitle}>
+              アクセントMIX（米・英・豪）
+            </ThemedText>
+            <View style={styles.chipRow}>
+              <Chip label="ON" selected={accentMix} onPress={() => changeAccentMix(true)} />
+              <Chip label="OFF" selected={!accentMix} onPress={() => changeAccentMix(false)} />
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              本番同様、問題ごとに米・英・豪のアクセントを使い分けます。OFFにするとすべて米音声になります。
             </ThemedText>
 
             <ThemedText type="smallBold" style={styles.sectionTitle}>

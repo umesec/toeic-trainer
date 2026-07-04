@@ -27,15 +27,12 @@ test('daysBetween / daysUntilExam', () => {
 });
 
 test('intensityOf: 必要スコア/日で強度が決まる', () => {
-  // gap 200 / 100日 = 2.0/日 → normal
-  assert.equal(intensityOf(plan(), '2026-07-02'), 'normal');
-  // gap 50 / 100日 → light
-  assert.equal(intensityOf(plan({ targetScore: 550 }), '2026-07-02'), 'light');
-  // gap 300 / 残り10日 → intense
-  assert.equal(
-    intensityOf(plan({ targetScore: 800, examDate: '2026-07-12' }), '2026-07-02'),
-    'intense'
-  );
+  // gap 200 / 100日 = 2.0/日 → intense（1.5超）
+  assert.equal(intensityOf(plan(), '2026-07-02'), 'intense');
+  // gap 100 / 100日 = 1.0/日 → normal（0.5〜1.5）
+  assert.equal(intensityOf(plan({ targetScore: 600 }), '2026-07-02'), 'normal');
+  // gap 40 / 100日 = 0.4/日 → light（0.5未満）
+  assert.equal(intensityOf(plan({ targetScore: 540 }), '2026-07-02'), 'light');
 });
 
 test('buildPhases: 3フェーズが連続して期間全体を覆う', () => {
@@ -62,7 +59,11 @@ test('dailyQuota: 正のノルマと目安時間を返す', () => {
   assert.ok(q.cards > 0);
   assert.ok(q.quiz > 0);
   assert.ok(q.listening > 0);
-  assert.equal(q.estMinutes, Math.round(q.cards * 0.5 + q.quiz * 1 + q.listening * 5));
+  assert.ok(q.reading > 0);
+  assert.equal(
+    q.estMinutes,
+    Math.round(q.cards * 0.5 + q.quiz * 1.5 + q.listening * 10 + q.reading * 8)
+  );
 });
 
 test('短期プランでもフェーズ計算が壊れない', () => {

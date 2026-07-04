@@ -33,6 +33,8 @@ export interface DailyQuota {
   quiz: number;
   /** リスニング練習のセット数 */
   listening: number;
+  /** Part 6/7 読解のセット数 */
+  reading: number;
   /** 1日の目安時間（分） */
   estMinutes: number;
 }
@@ -166,27 +168,29 @@ export function currentPhase(plan: StudyPlan, today: string): Phase {
 
 const QUOTA_TABLE: Record<PhaseId, Record<Intensity, Omit<DailyQuota, 'estMinutes'>>> = {
   foundation: {
-    light:   { cards: 20, quiz: 10, listening: 1 },
-    normal:  { cards: 35, quiz: 15, listening: 1 },
-    intense: { cards: 50, quiz: 20, listening: 2 },
+    light:   { cards: 20, quiz: 10, listening: 1, reading: 1 },
+    normal:  { cards: 35, quiz: 15, listening: 1, reading: 1 },
+    intense: { cards: 50, quiz: 20, listening: 2, reading: 1 },
   },
   practice: {
-    light:   { cards: 15, quiz: 15, listening: 1 },
-    normal:  { cards: 25, quiz: 20, listening: 2 },
-    intense: { cards: 35, quiz: 30, listening: 3 },
+    light:   { cards: 15, quiz: 15, listening: 1, reading: 1 },
+    normal:  { cards: 25, quiz: 20, listening: 2, reading: 2 },
+    intense: { cards: 35, quiz: 30, listening: 3, reading: 3 },
   },
   final: {
-    light:   { cards: 10, quiz: 15, listening: 2 },
-    normal:  { cards: 15, quiz: 20, listening: 2 },
-    intense: { cards: 20, quiz: 25, listening: 3 },
+    light:   { cards: 10, quiz: 15, listening: 2, reading: 1 },
+    normal:  { cards: 15, quiz: 20, listening: 2, reading: 2 },
+    intense: { cards: 20, quiz: 25, listening: 3, reading: 2 },
   },
 };
 
 /** 今日の学習メニューを算出 */
 export function dailyQuota(plan: StudyPlan, today: string): DailyQuota {
   const base = QUOTA_TABLE[currentPhase(plan, today).id][intensityOf(plan, today)];
-  // カード0.5分 / クイズ1.5分（問題読解＋解説） / リスニング10分（Part3/4 1セット相当）
-  const estMinutes = Math.round(base.cards * 0.5 + base.quiz * 1.5 + base.listening * 10);
+  // カード0.5分 / クイズ1.5分（問題読解＋解説） / リスニング10分（Part3/4 1セット相当） / 読解8分（Part6/7 1セット相当）
+  const estMinutes = Math.round(
+    base.cards * 0.5 + base.quiz * 1.5 + base.listening * 10 + base.reading * 8
+  );
   return { ...base, estMinutes };
 }
 

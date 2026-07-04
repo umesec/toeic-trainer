@@ -22,9 +22,15 @@ if (Platform.OS !== 'web') {
   });
 }
 
-function menuComplete(quota: { cards: number; quiz: number; listening: number }, log: DayLog) {
+function menuComplete(
+  quota: { cards: number; quiz: number; listening: number; reading: number },
+  log: DayLog
+) {
   return (
-    log.cards >= quota.cards && log.quiz >= quota.quiz && log.listening >= quota.listening
+    log.cards >= quota.cards &&
+    log.quiz >= quota.quiz &&
+    log.listening >= quota.listening &&
+    log.reading >= quota.reading
   );
 }
 
@@ -64,7 +70,7 @@ export async function syncReminders(
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '今日のメニューが残っています📚',
-        body: `目標 ${plan.targetScore}点まであと${remainDays - i}日。単語カード・クイズ・リスニングを進めましょう！`,
+        body: `目標 ${plan.targetScore}点まであと${remainDays - i}日。単語カード・クイズ・リスニング・長文読解を進めましょう！`,
         sound: false,
       },
       trigger: {

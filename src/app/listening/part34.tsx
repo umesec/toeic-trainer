@@ -11,7 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { LISTENING_SETS } from '@/data/part34';
 import type { ListeningSet } from '@/data/types';
 import { setQuestionId } from '@/lib/mistakes';
-import { pitchForSpeaker, speakLines, stopSpeech } from '@/lib/speech';
+import { accentForId, pitchForSpeaker, speakLines, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
 import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
 
@@ -83,7 +83,7 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
   const play = (slow = false) => {
     speakLines(
       set.script.map((line) => ({ text: line.text, pitch: pitchForSpeaker(line.speaker) })),
-      { slow }
+      { slow, accent: accentForId(set.id) }
     );
   };
 

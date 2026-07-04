@@ -20,7 +20,7 @@ import {
 } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
-import { setSpeechRateScale } from '@/lib/speech';
+import { setAccentMixEnabled, setSpeechRateScale } from '@/lib/speech';
 import {
   buildPhases,
   currentPhase,
@@ -81,7 +81,7 @@ export default function HomeScreen() {
   const today = todayStr();
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
-  const [dayLog, setDayLog] = useState<DayLog>({ cards: 0, quiz: 0, listening: 0 });
+  const [dayLog, setDayLog] = useState<DayLog>({ cards: 0, quiz: 0, listening: 0, reading: 0 });
   const [streakCount, setStreakCount] = useState(0);
   const [quizStats, setQuizStats] = useState<QuizStats>({ answered: 0, correct: 0 });
   const [dueCount, setDueCount] = useState(0);
@@ -122,8 +122,9 @@ export default function HomeScreen() {
     const wordIds = [...WORDS.map((w) => w.id), ...customWords.map((c) => c.id)];
     setDueCount(wordIds.filter((id) => progress[id] && isDue(progress[id], today)).length);
     setMistakeCount(mistakes.length);
-    // 設定の読み上げ速度をTTSに反映（アプリ起動時の初期化を兼ねる）
+    // 設定の読み上げ速度・アクセントMIXをTTSに反映（アプリ起動時の初期化を兼ねる）
     setSpeechRateScale(settings.speechRateScale);
+    setAccentMixEnabled(settings.accentMix);
     // 19時リマインド通知を最新の消化状況に同期（失敗しても画面には影響させない）
     syncReminders(settings.remindEnabled, p, log).catch(() => {});
 
@@ -388,6 +389,7 @@ function PlanSummary({
         </ThemedText>
         <MenuRow label="単語カード" done={dayLog.cards} goal={quota.cards} unit="枚" href="/flashcards" />
         <MenuRow label="クイズ" done={dayLog.quiz} goal={quota.quiz} unit="問" href="/quiz" />
+        <MenuRow label="長文読解 (Part 6/7)" done={dayLog.reading} goal={quota.reading} unit="セット" href="/quiz/part7" />
         <MenuRow
           label="音声変化・ディクテーション"
           done={dayLog.listening}
