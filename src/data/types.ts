@@ -8,7 +8,7 @@ export interface Word {
   exampleJa: string;
 }
 
-export type QuizTag = '品詞' | '時制' | '前置詞' | '語彙';
+export type QuizTag = '品詞' | '時制' | '前置詞' | '語彙' | '関係詞' | '接続詞';
 
 export interface QuizQuestion {
   id: string;
@@ -88,6 +88,13 @@ export interface SetQuestion {
   explanation: string;
 }
 
+/** 図表（グラフ・時刻表など）— Part 3/4 の意図問題と組み合わせる */
+export interface SetChart {
+  title: string;
+  /** 各行は列の値の配列（先頭行がヘッダー） */
+  rows: string[][];
+}
+
 /** TOEIC Part 3（会話）/ Part 4（トーク）の1セット */
 export interface ListeningSet {
   id: string;
@@ -97,6 +104,8 @@ export interface ListeningSet {
   script: { speaker?: string; text: string }[];
   scriptJa: string;
   questions: SetQuestion[];
+  /** 図表問題のときに添付する表（省略可） */
+  chart?: SetChart;
 }
 
 /** TOEIC Part 6（長文穴埋め）の1文書。空所は [1]〜[4] のマーカー */
@@ -108,12 +117,17 @@ export interface Part6Set {
   blanks: { no: number; choices: [string, string, string, string]; answer: number; explanation: string }[];
 }
 
-/** TOEIC Part 7（長文読解）の1文書 */
+/** Part 7 の1文書（シングル/ダブル/トリプルパッセージで複数になる） */
+export interface Part7Passage {
+  docType: string;
+  text: string;
+  textJa: string;
+}
+
+/** TOEIC Part 7（長文読解）の1セット。passages.length で 1=シングル / 2=ダブル / 3=トリプル */
 export interface Part7Set {
   id: string;
-  docType: string;
-  passage: string;
-  passageJa: string;
+  passages: Part7Passage[];
   questions: SetQuestion[];
 }
 

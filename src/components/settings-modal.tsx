@@ -19,6 +19,8 @@ import {
 const RATE_OPTIONS = [
   { label: 'ゆっくり', value: 0.8 },
   { label: '標準', value: 1.0 },
+  { label: '1.1x', value: 1.1 },
+  { label: '1.25x', value: 1.25 },
   { label: '速い', value: 1.2 },
 ] as const;
 

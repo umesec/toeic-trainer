@@ -88,6 +88,17 @@ export default function ListeningIndexScreen() {
               </ThemedText>
             </Card>
           </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/listening/shadowing')}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <Card tint={features.listening.tint}>
+              <ThemedText type="smallBold">🎤 シャドーイング練習</ThemedText>
+              <ThemedText type="small">
+                Part 3/4 スクリプトを1行ずつ再生。聞いた直後に声に出して追いかけるシャドーイングで、リスニング力とスピーキング力を同時に鍛えます。スロー再生も可能。
+              </ThemedText>
+            </Card>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

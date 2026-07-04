@@ -68,6 +68,7 @@ const FEATURES: {
   { emoji: '📈', title: '模試・実力測定', subtitle: '推定スコアを測る', feature: 'mock', href: '/quiz/mock' },
   { emoji: '📓', title: '間違いノート', subtitle: '解き直しで克服', feature: 'mistakes', href: '/quiz/mistakes' },
   { emoji: '🔤', title: '単語テスト', subtitle: '4択で腕試し', feature: 'words', href: '/flashcards/test' },
+  { emoji: '📊', title: '学習分析', subtitle: 'Part別正答率・スコア推移', feature: 'quiz', href: '/stats' },
 ];
 
 export default function HomeScreen() {

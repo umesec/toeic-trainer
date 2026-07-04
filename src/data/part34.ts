@@ -2,6 +2,7 @@ import type { ListeningSet } from '@/data/types';
 
 import { PART3_EXTRA } from './part3x.ts';
 import { PART4_EXTRA } from './part4x.ts';
+import { PART34_GRAPH } from './part34g.ts';
 
 /**
  * TOEIC Part 3（会話）/ Part 4（トーク）形式のリスニングセット。
@@ -436,4 +437,4 @@ const BASE_SETS: ListeningSet[] = [
 ];
 
 /** Part 3/4 の全セット（基本 + 追加分を結合） */
-export const LISTENING_SETS: ListeningSet[] = [...BASE_SETS, ...PART3_EXTRA, ...PART4_EXTRA];
+export const LISTENING_SETS: ListeningSet[] = [...BASE_SETS, ...PART3_EXTRA, ...PART4_EXTRA, ...PART34_GRAPH];

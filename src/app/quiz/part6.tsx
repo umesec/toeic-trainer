@@ -34,6 +34,7 @@ export default function Part6Screen() {
               passageJa={current.passageJa}
               mistakeKind="part6"
               mistakeIds={current.blanks.map((_, i) => setQuestionId(current.id, i))}
+              partKind="part6"
               questions={current.blanks.map((b) => ({
                 label: `空所 [${b.no}]`,
                 choices: b.choices,

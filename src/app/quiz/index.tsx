@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +17,8 @@ import {
   loadTagStats,
   loadWrongIds,
   recordMistake,
+  recordPaceAnswer,
+  recordPartAnswer,
   recordStudy,
   recordTagAnswer,
   saveQuizStats,
@@ -26,7 +28,7 @@ import {
 import { shuffle } from '@/lib/util';
 
 const SESSION_SIZE = 10;
-const TAGS = ['全部', '品詞', '時制', '前置詞', '語彙'] as const;
+const TAGS = ['全部', '品詞', '時制', '前置詞', '語彙', '関係詞', '接続詞'] as const;
 type TagFilter = (typeof TAGS)[number];
 
 type Phase = 'setup' | 'playing' | 'result';
@@ -44,11 +46,22 @@ export default function QuizScreen() {
   const [score, setScore] = useState(0);
   const [wrongIds, setWrongIds] = useState<Set<string>>(new Set());
   const [tagStats, setTagStats] = useState<TagStatsMap>({});
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const questionStartMsRef = useRef(Date.now());
 
   // 設定画面に戻るたびに弱点分析を最新化
   useEffect(() => {
     if (phase === 'setup') loadTagStats().then(setTagStats);
   }, [phase]);
+
+  // 問題が変わるたびにタイマーリセット
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    questionStartMsRef.current = Date.now();
+    setElapsedSec(0);
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase, index]);
 
   const start = async () => {
     const pool = tag === '全部' ? QUIZZES : QUIZZES.filter((q) => q.tag === (tag as QuizTag));
@@ -80,6 +93,8 @@ export default function QuizScreen() {
       return next;
     });
     recordTagAnswer(question.tag, correct);
+    recordPartAnswer('part5', correct);
+    recordPaceAnswer('part5', Date.now() - questionStartMsRef.current);
     if (!correct) recordMistake('part5', question.id, today);
     bumpDaily(today, 'quiz');
     recordStudy(today);
@@ -149,9 +164,17 @@ export default function QuizScreen() {
 
           {phase === 'playing' && question && (
             <>
-              <ThemedText type="small" themeColor="textSecondary">
-                第 {index + 1} 問 / {session.length}　［{question.tag}］
-              </ThemedText>
+              <View style={styles.progressRow}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  第 {index + 1} 問 / {session.length}　［{question.tag}］
+                </ThemedText>
+                <ThemedText
+                  type="small"
+                  themeColor={elapsedSec > 20 ? undefined : 'textSecondary'}
+                  style={elapsedSec > 20 ? { color: theme.warning } : undefined}>
+                  {elapsedSec}秒 / 目安20秒
+                </ThemedText>
+              </View>
               <Card>
                 <ThemedText type="default">{question.sentence}</ThemedText>
               </Card>
@@ -268,6 +291,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   linkRow: {
     flexDirection: 'row',

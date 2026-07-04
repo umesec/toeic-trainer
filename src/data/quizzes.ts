@@ -1,4 +1,5 @@
 import type { QuizQuestion, QuizTag } from '@/data/types';
+import { QUIZZES2 } from './quizzes2.ts';
 
 const q = (
   id: string,
@@ -11,7 +12,7 @@ const q = (
 ): QuizQuestion => ({ id, tag, sentence, sentenceJa, choices, answer, explanation });
 
 /** TOEIC Part 5 形式の文法・語彙問題 */
-export const QUIZZES: QuizQuestion[] = [
+const QUIZZES_BASE: QuizQuestion[] = [
   // ---------- 品詞 ----------
   q('q001', '品詞', 'The manager asked the staff to work more ___.', '部長はスタッフにもっと効率的に働くよう求めた。',
     ['efficient', 'efficiency', 'efficiently', 'efficiencies'], 2,
@@ -563,3 +564,5 @@ export const QUIZZES: QuizQuestion[] = [
     ['remark', 'remind', 'resemble', 'reimburse'], 3,
     'reimburse A for B「AにBを払い戻す」。経費精算の文脈で頻出。remind A of B「AにBを思い出させる」と語法の違いにも注意。'),
 ];
+
+export const QUIZZES: QuizQuestion[] = [...QUIZZES_BASE, ...QUIZZES2];

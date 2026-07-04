@@ -104,6 +104,8 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
         <AppButton label="🐢 ゆっくり" variant="ghost" onPress={() => play(true)} />
       </View>
 
+      {set.chart && <ChartView chart={set.chart} />}
+
       {set.questions.map((q, qi) => {
         const picked = answers[qi];
         const done = picked !== null;
@@ -188,6 +190,49 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
     </>
   );
 }
+
+function ChartView({ chart }: { chart: NonNullable<ListeningSet['chart']> }) {
+  const theme = useTheme();
+  const header = chart.rows[0];
+  const body = chart.rows.slice(1);
+  return (
+    <Card>
+      <ThemedText type="smallBold">📊 {chart.title}</ThemedText>
+      <View style={chartStyles.table}>
+        {header && (
+          <View style={[chartStyles.row, { backgroundColor: theme.backgroundSelected }]}>
+            {header.map((cell, i) => (
+              <ThemedText key={i} type="small" style={[chartStyles.cell, chartStyles.headerCell]}>
+                {cell}
+              </ThemedText>
+            ))}
+          </View>
+        )}
+        {body.map((row, ri) => (
+          <View key={ri} style={chartStyles.row}>
+            {row.map((cell, ci) => (
+              <ThemedText key={ci} type="small" style={chartStyles.cell}>
+                {cell}
+              </ThemedText>
+            ))}
+          </View>
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+const chartStyles = StyleSheet.create({
+  table: { gap: 1 },
+  row: { flexDirection: 'row' },
+  cell: {
+    flex: 1,
+    padding: Spacing.one + 2,
+    borderWidth: 0.5,
+    borderColor: 'rgba(128,128,128,0.3)',
+  },
+  headerCell: { fontWeight: '700' },
+});
 
 const styles = StyleSheet.create({
   container: {

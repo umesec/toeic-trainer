@@ -13,7 +13,7 @@ import { LISTENING_SETS } from '@/data/part34';
 import { PART6_SETS } from '@/data/part6';
 import { PART7_SETS } from '@/data/part7';
 import { QUIZZES } from '@/data/quizzes';
-import type { ListeningSet, Part1Item, Part2Item, Part6Set, Part7Set, QuizQuestion } from '@/data/types';
+import type { ListeningSet, Part1Item, Part2Item, Part6Set, Part7Set, QuizQuestion, SetChart } from '@/data/types';
 import { useFeatureColors, useTheme } from '@/hooks/use-theme';
 import { setQuestionId } from '@/lib/mistakes';
 import { estimateScore } from '@/lib/score';
@@ -30,10 +30,11 @@ import {
 } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
-type Mode = 'mini' | 'full';
+type Mode = 'mini' | 'half' | 'full';
 
 const MODE_CONFIG = {
   mini: { label: 'ミニ模試', minutes: 10, p1: 0, p2: 5, p34: 0, p5: 10, p6: 0, p7: 0 },
+  half: { label: 'ハーフ模試', minutes: 60, p1: 6, p2: 12, p34: 7, p5: 20, p6: 3, p7: 5 },
   full: { label: '実力測定モード', minutes: 40, p1: 3, p2: 13, p34: 5, p5: 20, p6: 2, p7: 3 },
 } as const;
 
@@ -197,7 +198,7 @@ export default function MockTestScreen() {
     await bumpDaily(today, 'quiz', readingTotal);
     await recordStudy(today);
     const estimated =
-      plan.mode === 'full'
+      plan.mode === 'full' || plan.mode === 'half'
         ? estimateScore(listening, listeningTotal, reading, readingTotal)
         : undefined;
     await addMockResult({
@@ -233,6 +234,16 @@ export default function MockTestScreen() {
                   Part 2×5問 + Part 5×10問。スキマ時間の腕試しに。スコア推定はありません。
                 </ThemedText>
                 <AppButton label="ミニ模試をはじめる" onPress={() => start('mini')} />
+              </Card>
+
+              <Card>
+                <ThemedText type="smallBold">📋 ハーフ模試（約60分・100問）</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  L: Part 1×6問 + Part 2×12問 + Part 3/4×7セット（21問）{'\n'}
+                  R: Part 5×20問 + Part 6×3文書（12問）+ Part 7×5文書（15〜25問）{'\n'}
+                  本番の半分量で時間管理を練習できます。推定スコア付き。
+                </ThemedText>
+                <AppButton label="ハーフ模試をはじめる" onPress={() => start('half')} />
               </Card>
 
               <Card tint={features.mock.tint}>
@@ -304,7 +315,12 @@ export default function MockTestScreen() {
                     rerender();
                   }}
                   onNext={advance}
-                  extra={<AppButton label="🔊 もう一度再生" variant="ghost" onPress={() => speakLines(plan.part34[itemIdx].script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })))} />}
+                  extra={
+                    <>
+                      <AppButton label="🔊 もう一度再生" variant="ghost" onPress={() => speakLines(plan.part34[itemIdx].script.map((l) => ({ text: l.text, pitch: pitchForSpeaker(l.speaker) })))} />
+                      {plan.part34[itemIdx].chart && <MockChartView chart={plan.part34[itemIdx].chart!} />}
+                    </>
+                  }
                 />
               )}
 
@@ -344,7 +360,11 @@ export default function MockTestScreen() {
 
               {kind === 'part7' && (
                 <SetSection
-                  passage={`【${plan.part7[itemIdx].docType}】\n${plan.part7[itemIdx].passage}`}
+                  passage={plan.part7[itemIdx].passages.map((p, i) =>
+                    plan.part7[itemIdx].passages.length > 1
+                      ? `【文書${i + 1}: ${p.docType}】\n${p.text}`
+                      : `【${p.docType}】\n${p.text}`
+                  ).join('\n\n')}
                   questions={plan.part7[itemIdx].questions.map((q, i) => ({ label: `Q${i + 1}. ${q.q}`, choices: q.choices }))}
                   picked={a.p7[itemIdx]}
                   onPick={(qi, ci) => {
@@ -611,11 +631,12 @@ function buildReview(plan: TestPlan, a: Answers): ReviewEntry[] {
     });
   });
   plan.part7.forEach((set, si) => {
+    const docTypes = set.passages.map((p) => p.docType).join(' + ');
     set.questions.forEach((q, qi) => {
       if (a.p7[si][qi] !== q.answer) {
         entries.push({
           key: `${set.id}-${qi}`,
-          header: `Part 7【${set.docType}】`,
+          header: `Part 7【${docTypes}】`,
           body: q.q,
           correct: `(${String.fromCharCode(65 + q.answer)}) ${q.choices[q.answer]}`,
           explanation: q.explanation,
@@ -639,7 +660,7 @@ function ResultView({
 }) {
   const theme = useTheme();
   const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, answers);
-  const estimated = plan.mode === 'full' ? estimateScore(listening, listeningTotal, reading, readingTotal) : null;
+  const estimated = plan.mode === 'full' || plan.mode === 'half' ? estimateScore(listening, listeningTotal, reading, readingTotal) : null;
   const review = buildReview(plan, answers);
 
   return (
@@ -702,6 +723,48 @@ function ResultView({
     </>
   );
 }
+
+function MockChartView({ chart }: { chart: SetChart }) {
+  const theme = useTheme();
+  const header = chart.rows[0];
+  const body = chart.rows.slice(1);
+  return (
+    <Card>
+      <ThemedText type="smallBold">📊 {chart.title}</ThemedText>
+      <View>
+        {header && (
+          <View style={[mockChartStyles.row, { backgroundColor: theme.backgroundSelected }]}>
+            {header.map((cell, i) => (
+              <ThemedText key={i} type="small" style={[mockChartStyles.cell, mockChartStyles.headerCell]}>
+                {cell}
+              </ThemedText>
+            ))}
+          </View>
+        )}
+        {body.map((row, ri) => (
+          <View key={ri} style={mockChartStyles.row}>
+            {row.map((cell, ci) => (
+              <ThemedText key={ci} type="small" style={mockChartStyles.cell}>
+                {cell}
+              </ThemedText>
+            ))}
+          </View>
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+const mockChartStyles = StyleSheet.create({
+  row: { flexDirection: 'row' },
+  cell: {
+    flex: 1,
+    padding: Spacing.one + 2,
+    borderWidth: 0.5,
+    borderColor: 'rgba(128,128,128,0.3)',
+  },
+  headerCell: { fontWeight: '700' },
+});
 
 const styles = StyleSheet.create({
   container: {

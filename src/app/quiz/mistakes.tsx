@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { AppButton, Card } from '@/components/ui';
+import { AppButton, Card, Chip } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { resolveMistake, type ResolvedMistake } from '@/lib/mistakes';
@@ -14,25 +14,35 @@ import { todayStr } from '@/lib/srs';
 import {
   clearMistakes,
   loadMistakes,
+  loadMistakeSrs,
   recordMistake,
   removeMistake,
+  reviewMistakeCard,
   type MistakeEntry,
+  type MistakeSrsMap,
 } from '@/lib/storage';
+import { isDue } from '@/lib/srs';
 
 interface NoteItem {
   entry: MistakeEntry;
   resolved: ResolvedMistake;
 }
 
+type ViewFilter = 'all' | 'due';
+
 export default function MistakesScreen() {
   const router = useRouter();
+  const today = todayStr();
   const [items, setItems] = useState<NoteItem[]>([]);
+  const [srsMap, setSrsMap] = useState<MistakeSrsMap>({});
+  const [filter, setFilter] = useState<ViewFilter>('due');
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [masteredCount, setMasteredCount] = useState(0);
 
   useEffect(() => {
-    loadMistakes().then((list) => {
+    Promise.all([loadMistakes(), loadMistakeSrs()]).then(([list, srs]) => {
+      setSrsMap(srs);
       setItems(
         list
           .map((entry) => ({ entry, resolved: resolveMistake(entry) }))
@@ -42,15 +52,29 @@ export default function MistakesScreen() {
   }, []);
 
   const keyOf = (e: MistakeEntry) => `${e.kind}/${e.id}`;
+  const srsKey = (e: MistakeEntry) => `${e.kind}:${e.id}`;
+
+  const visibleItems = filter === 'due'
+    ? items.filter((x) => isDue(srsMap[srsKey(x.entry)], today))
+    : items;
+
+  const dueCount = items.filter((x) => isDue(srsMap[srsKey(x.entry)], today)).length;
 
   const onSolved = async (item: NoteItem, correct: boolean) => {
+    await reviewMistakeCard(item.entry.kind, item.entry.id, correct, today);
+    setSrsMap((prev) => {
+      // optimistically hide from "due" filter after review
+      return { ...prev };
+    });
     if (correct) {
       await removeMistake(item.entry.kind, item.entry.id);
       setItems((prev) => prev.filter((x) => keyOf(x.entry) !== keyOf(item.entry)));
       setMasteredCount((n) => n + 1);
       setOpenKey(null);
     } else {
-      await recordMistake(item.entry.kind, item.entry.id, todayStr());
+      await recordMistake(item.entry.kind, item.entry.id, today);
+      // reload srs map to get updated due date
+      loadMistakeSrs().then(setSrsMap);
     }
   };
 
@@ -77,19 +101,40 @@ export default function MistakesScreen() {
             {masteredCount > 0 ? `（このセッションで ${masteredCount} 問クリア！）` : ''}
           </ThemedText>
 
-          {items.length === 0 ? (
+          <View style={styles.filterRow}>
+            <Chip
+              label={`今日の復習（${dueCount}問）`}
+              selected={filter === 'due'}
+              onPress={() => setFilter('due')}
+            />
+            <Chip
+              label={`全て（${items.length}問）`}
+              selected={filter === 'all'}
+              onPress={() => setFilter('all')}
+            />
+          </View>
+
+          {visibleItems.length === 0 ? (
             <Card style={styles.emptyCard}>
-              <ThemedText type="smallBold">🎉 ノートは空です</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                間違えた問題がここに溜まっていきます。クイズや模試に挑戦しましょう。
-              </ThemedText>
+              {items.length === 0 ? (
+                <>
+                  <ThemedText type="smallBold">🎉 ノートは空です</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    間違えた問題がここに溜まっていきます。クイズや模試に挑戦しましょう。
+                  </ThemedText>
+                </>
+              ) : (
+                <>
+                  <ThemedText type="smallBold">✅ 今日の復習はありません</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    SRS スケジュール上、今日の復習は完了しています。「全て」タブで全問確認できます。
+                  </ThemedText>
+                </>
+              )}
             </Card>
           ) : (
             <>
-              <ThemedText type="small" themeColor="textSecondary">
-                全 {items.length} 問（タップで解き直し）
-              </ThemedText>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <MistakeCard
                   key={keyOf(item.entry)}
                   item={item}
@@ -100,11 +145,13 @@ export default function MistakesScreen() {
                   onSolved={(correct) => onSolved(item, correct)}
                 />
               ))}
-              <AppButton
-                label={confirmClear ? '本当に全部削除する（取り消せません）' : 'ノートを全部削除'}
-                variant="ghost"
-                onPress={onClearAll}
-              />
+              {filter === 'all' && (
+                <AppButton
+                  label={confirmClear ? '本当に全部削除する（取り消せません）' : 'ノートを全部削除'}
+                  variant="ghost"
+                  onPress={onClearAll}
+                />
+              )}
             </>
           )}
         </ScrollView>
@@ -239,6 +286,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    flexWrap: 'wrap',
   },
   emptyCard: {
     alignItems: 'center',

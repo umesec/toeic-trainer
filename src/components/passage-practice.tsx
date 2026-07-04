@@ -6,8 +6,9 @@ import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import type { Part7Passage } from '@/data/types';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordMistake, recordStudy, type MistakeKind } from '@/lib/storage';
+import { bumpDaily, recordMistake, recordPartAnswer, recordStudy, type MistakeKind } from '@/lib/storage';
 
 export interface PassageQuestion {
   label: string;
@@ -18,28 +19,40 @@ export interface PassageQuestion {
 
 /**
  * Part 6/7 共通の「文書 + 設問」練習コンポーネント。
+ * passages を渡すと複数文書（ダブル/トリプルパッセージ）を表示。
  * 全問回答後に訳を表示できる。
  */
 export function PassagePractice({
   docType,
   passage,
   passageJa,
+  passages,
   questions,
   mistakeKind,
   mistakeIds,
+  partKind,
 }: {
-  docType: string;
-  passage: string;
-  passageJa: string;
+  /** シングル文書時のみ使用（Part 6 互換） */
+  docType?: string;
+  passage?: string;
+  passageJa?: string;
+  /** ダブル/トリプルパッセージ時に使用 */
+  passages?: Part7Passage[];
   questions: PassageQuestion[];
   /** 誤答を間違いノートに記録する場合に指定 */
   mistakeKind?: MistakeKind;
   /** questions と同じ並びの問題ID */
   mistakeIds?: string[];
+  /** Part別正答率記録用（'part6' | 'part7'） */
+  partKind?: string;
 }) {
   const theme = useTheme();
   const [answers, setAnswers] = useState<(number | null)[]>(Array(questions.length).fill(null));
   const [showJa, setShowJa] = useState(false);
+
+  // passages が渡された場合はそちらを優先
+  const resolvedPassages: Part7Passage[] = passages ??
+    (passage != null ? [{ docType: docType ?? '', text: passage, textJa: passageJa ?? '' }] : []);
 
   // 文書を開いたら「今日のクイズ学習」としてカウント
   useEffect(() => {
@@ -53,14 +66,16 @@ export function PassagePractice({
 
   return (
     <>
-      <Card>
-        <ThemedText type="small" themeColor="textSecondary">
-          【{docType}】
-        </ThemedText>
-        <ThemedText type="small" style={styles.passage}>
-          {passage}
-        </ThemedText>
-      </Card>
+      {resolvedPassages.map((p, pi) => (
+        <Card key={pi}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {resolvedPassages.length > 1 ? `文書${pi + 1}【${p.docType}】` : `【${p.docType}】`}
+          </ThemedText>
+          <ThemedText type="small" style={styles.passage}>
+            {p.text}
+          </ThemedText>
+        </Card>
+      ))}
 
       {questions.map((q, qi) => {
         const picked = answers[qi];
@@ -79,7 +94,9 @@ export function PassagePractice({
                     const next = [...answers];
                     next[qi] = ci;
                     setAnswers(next);
-                    if (ci !== q.answer && mistakeKind && mistakeIds?.[qi]) {
+                    const correct = ci === q.answer;
+                    if (partKind) recordPartAnswer(partKind, correct);
+                    if (!correct && mistakeKind && mistakeIds?.[qi]) {
                       recordMistake(mistakeKind, mistakeIds[qi], todayStr());
                     }
                   }}
@@ -124,11 +141,16 @@ export function PassagePractice({
             variant="ghost"
             onPress={() => setShowJa((s) => !s)}
           />
-          {showJa && (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.passage}>
-              {passageJa}
-            </ThemedText>
-          )}
+          {showJa && resolvedPassages.map((p, pi) => (
+            <View key={pi}>
+              {resolvedPassages.length > 1 && (
+                <ThemedText type="small" themeColor="textSecondary">文書{pi + 1}</ThemedText>
+              )}
+              <ThemedText type="small" themeColor="textSecondary" style={styles.passage}>
+                {p.textJa}
+              </ThemedText>
+            </View>
+          ))}
         </Card>
       )}
     </>

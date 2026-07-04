@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { StudyPlan } from '@/lib/plan';
 // 注: reminders.ts からの storage 参照は型のみなのでランタイム循環はない
 import { syncReminders } from '@/lib/reminders';
-import { addDays, type CardState } from '@/lib/srs';
+import { addDays, isDue, newCardState, review, type CardState } from '@/lib/srs';
 
 const KEYS = {
   progress: 'srs.progress.v1',
@@ -17,6 +17,9 @@ const KEYS = {
   mockHistory: 'mock.history.v1',
   mistakes: 'mistakes.v1',
   settings: 'settings.v1',
+  paceStats: 'pace.stats.v1',
+  partStats: 'part.stats.v1',
+  mistakeSrs: 'mistake.srs.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {
@@ -217,8 +220,64 @@ export async function removeMistake(kind: MistakeKind, id: string): Promise<Mist
   return list;
 }
 
+/* ---------- 間違いノート SRS（SM-2 ベース） ---------- */
+
+export type MistakeSrsMap = Record<string, CardState>;
+
+const mistakeSrsKey = (kind: MistakeKind, id: string) => `${kind}:${id}`;
+
+export const loadMistakeSrs = () => getJSON<MistakeSrsMap>(KEYS.mistakeSrs, {});
+
+export async function isMistakeDue(kind: MistakeKind, id: string, today: string): Promise<boolean> {
+  const map = await loadMistakeSrs();
+  const key = mistakeSrsKey(kind, id);
+  return isDue(map[key], today);
+}
+
+export async function reviewMistakeCard(
+  kind: MistakeKind,
+  id: string,
+  correct: boolean,
+  today: string
+): Promise<void> {
+  const map = await loadMistakeSrs();
+  const key = mistakeSrsKey(kind, id);
+  const prev = map[key] ?? newCardState(today);
+  map[key] = review(prev, correct ? 'good' : 'again', today);
+  await setJSON(KEYS.mistakeSrs, map);
+}
+
 export async function clearMistakes(): Promise<void> {
   await setJSON(KEYS.mistakes, []);
+}
+
+/* ---------- 解答ペース統計（平均解答時間） ---------- */
+
+export interface PaceEntry { totalMs: number; count: number }
+export type PaceStatsMap = Record<string, PaceEntry>;
+
+export const loadPaceStats = () => getJSON<PaceStatsMap>(KEYS.paceStats, {});
+
+export async function recordPaceAnswer(kind: string, ms: number): Promise<void> {
+  const map = await loadPaceStats();
+  const e = map[kind] ?? { totalMs: 0, count: 0 };
+  map[kind] = { totalMs: e.totalMs + ms, count: e.count + 1 };
+  await setJSON(KEYS.paceStats, map);
+}
+
+/* ---------- Part別正答率統計 ---------- */
+
+export type PartStatsMap = Record<string, { answered: number; correct: number }>;
+
+export const loadPartStats = () => getJSON<PartStatsMap>(KEYS.partStats, {});
+
+export async function recordPartAnswer(kind: string, correct: boolean): Promise<void> {
+  const map = await loadPartStats();
+  const e = map[kind] ?? { answered: 0, correct: 0 };
+  e.answered += 1;
+  if (correct) e.correct += 1;
+  map[kind] = e;
+  await setJSON(KEYS.partStats, map);
 }
 
 /* ---------- 設定 ---------- */
