@@ -20,6 +20,8 @@ const KEYS = {
   paceStats: 'pace.stats.v1',
   partStats: 'part.stats.v1',
   mistakeSrs: 'mistake.srs.v1',
+  diagnosisResult: 'diagnosis.result.v1',
+  onboardingDone: 'onboarding.done.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {
@@ -351,3 +353,20 @@ export async function resetAll(): Promise<void> {
     // 失敗しても致命的でない
   }
 }
+
+/* ---------- 診断テスト結果 ---------- */
+
+export interface DiagnosisResult {
+  estimatedTotal: number;
+  listening: number;
+  reading: number;
+  date: string;
+}
+
+export const loadDiagnosisResult = () => getJSON<DiagnosisResult | null>(KEYS.diagnosisResult, null);
+export const saveDiagnosisResult = (r: DiagnosisResult) => setJSON(KEYS.diagnosisResult, r);
+
+/* ---------- オンボーディング ---------- */
+
+export const loadOnboardingDone = () => getJSON<boolean>(KEYS.onboardingDone, false);
+export const saveOnboardingDone = () => setJSON(KEYS.onboardingDone, true);

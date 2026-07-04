@@ -59,14 +59,19 @@ export function Chip({
   label,
   selected,
   onPress,
+  disabled,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  disabled?: boolean;
 }) {
   const theme = useTheme();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.dimmed}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [pressed && !disabled && styles.dimmed, disabled && styles.dimmed]}>
       <ThemedView
         type={selected ? undefined : 'backgroundElement'}
         style={[
@@ -76,6 +81,7 @@ export function Chip({
             borderColor: theme.accent,
             borderWidth: 1.5,
           },
+          disabled && { opacity: 0.35 },
         ]}>
         <ThemedText
           type={selected ? 'smallBold' : 'small'}

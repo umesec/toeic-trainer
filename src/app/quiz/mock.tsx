@@ -647,6 +647,64 @@ function buildReview(plan: TestPlan, a: Answers): ReviewEntry[] {
   return entries;
 }
 
+interface NextAction {
+  title: string;
+  actions: string[];
+}
+
+function buildNextActions(total: number, lRate: number, rRate: number): NextAction {
+  const weakL = lRate < rRate - 10;
+  const weakR = rRate < lRate - 10;
+  if (total < 400) {
+    return {
+      title: '基礎固めを最優先に',
+      actions: [
+        '単語カードで毎日30枚を目標にインプットを増やしましょう',
+        'Part 5 の「品詞」「時制」タグから文法基礎を固めると効果的です',
+        'Part 2 の短い音声問題から正解率を上げていきましょう',
+      ],
+    };
+  }
+  if (total < 600) {
+    return {
+      title: 'インプットを広げて600点台へ',
+      actions: [
+        weakL ? 'リスニングが弱め → Part 3/4 シャドーイングで音声を聞く耳を鍛えましょう' : 'リスニングは順調 → 引き続き音声練習を継続してください',
+        weakR ? 'リーディングが弱め → Part 5 の語彙・前置詞タグを集中練習しましょう' : 'リーディングは安定 → Part 6/7 の長文に挑戦しましょう',
+        '間違いノートを定期的に確認してSRS復習サイクルを回しましょう',
+      ],
+    };
+  }
+  if (total < 730) {
+    return {
+      title: '弱点を潰して700点台へ',
+      actions: [
+        weakL ? 'リスニングの正解率を上げるには Part 3/4 のスクリプト精読が有効です' : 'リスニングは良好 → Part 3/4 の図表問題や意図問題に挑戦しましょう',
+        weakR ? 'リーディング強化には Part 7 のシングルパッセージを速読練習してください' : 'リーディングは良好 → ダブル・トリプルパッセージに挑みましょう',
+        'ハーフ模試（60分）で時間管理の練習を積みましょう',
+      ],
+    };
+  }
+  if (total < 860) {
+    return {
+      title: '精度を磨いて860点台へ',
+      actions: [
+        weakL ? 'リスニングの細部把握力を上げましょう → 1.25x速度のシャドーイングを試してください' : 'リスニングは高精度 → ディクテーションでさらに精度を上げましょう',
+        weakR ? 'リーディングの時間管理が課題 → Part 7 を大問単位でタイム計測してください' : 'リーディングは安定 → Part 7 マルチパッセージの正解率を維持しましょう',
+        '間違いノートのSRS復習を欠かさず、ミスを限りなくゼロに近づけましょう',
+      ],
+    };
+  }
+  return {
+    title: '900点に向けて最後の仕上げ',
+    actions: [
+      weakL ? 'わずかなリスニングのミスを洗い出しましょう → ディクテーションで音素レベルの精度を確認' : '高いリスニング精度を維持 → 速度1.25xで本番より難しい条件で鍛えましょう',
+      weakR ? 'Part 7 の読み落としゼロを目指しましょう → トリプルパッセージを繰り返し解いてください' : 'リーディングは優秀 → 間違えた語彙・熟語を単語カードに追加して管理しましょう',
+      '本番を想定して定期的にハーフ・フル模試を受け、時間配分を調整してください',
+    ],
+  };
+}
+
 function ResultView({
   plan,
   answers,
@@ -658,10 +716,18 @@ function ResultView({
   onRetry: () => void;
   onBack: () => void;
 }) {
+  const router = useRouter();
   const theme = useTheme();
   const { listening, listeningTotal, reading, readingTotal } = countCorrect(plan, answers);
   const estimated = plan.mode === 'full' || plan.mode === 'half' ? estimateScore(listening, listeningTotal, reading, readingTotal) : null;
   const review = buildReview(plan, answers);
+  const nextAction = estimated
+    ? buildNextActions(
+        estimated.total,
+        Math.round((listening / Math.max(1, listeningTotal)) * 100),
+        Math.round((reading / Math.max(1, readingTotal)) * 100)
+      )
+    : null;
 
   return (
     <>
@@ -681,6 +747,19 @@ function ResultView({
           <ThemedText type="small" themeColor="textSecondary">
             ※ 68問・TTS音声・自作問題による簡易推定です。公式スコアを保証するものではありません。
           </ThemedText>
+        </Card>
+      )}
+
+      {nextAction && (
+        <Card style={{ borderLeftWidth: 4, borderLeftColor: theme.accent }}>
+          <ThemedText type="smallBold">🎯 次にやること — {nextAction.title}</ThemedText>
+          {nextAction.actions.map((a, i) => (
+            <ThemedText key={i} type="small">・{a}</ThemedText>
+          ))}
+          <View style={styles.nextActionButtons}>
+            <AppButton label="弱点を練習" variant="ghost" onPress={() => router.push('/quiz' as never)} />
+            <AppButton label="間違いを復習" variant="ghost" onPress={() => router.push('/quiz/mistakes' as never)} />
+          </View>
         </Card>
       )}
 
@@ -825,6 +904,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
     justifyContent: 'center',
+  },
+  nextActionButtons: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
   },
   pressed: {
     opacity: 0.6,

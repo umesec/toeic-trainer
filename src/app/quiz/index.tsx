@@ -257,6 +257,7 @@ export default function QuizScreen() {
 
 /** 分野別の累計正答率と最弱分野を表示する */
 function WeaknessCard({ tagStats }: { tagStats: TagStatsMap }) {
+  const router = useRouter();
   const theme = useTheme();
   const rows = TAGS.filter((t) => t !== '全部')
     .map((t) => ({ tag: t, stats: tagStats[t] }))
@@ -270,18 +271,31 @@ function WeaknessCard({ tagStats }: { tagStats: TagStatsMap }) {
     <Card>
       <ThemedText type="smallBold">📊 弱点分析（累計）</ThemedText>
       {rows.map((r) => (
-        <View key={r.tag} style={styles.weakRow}>
-          <ThemedText type="small">{r.tag}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {r.rate}%（{r.answered}問）
-          </ThemedText>
-        </View>
+        <Pressable
+          key={r.tag}
+          onPress={() => router.push({ pathname: '/quiz/grammar', params: { tag: r.tag } } as never)}
+          style={({ pressed }) => pressed && { opacity: 0.6 }}>
+          <View style={styles.weakRow}>
+            <ThemedText type="small">{r.tag}</ThemedText>
+            <View style={styles.weakRight}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {r.rate}%（{r.answered}問）
+              </ThemedText>
+              <ThemedText type="small" themeColor="accent">解説 ▶</ThemedText>
+            </View>
+          </View>
+        </Pressable>
       ))}
       {rows.length >= 2 && (
         <ThemedText type="small" style={{ color: theme.warning }}>
-          💡 「{weakest.tag}」が最も苦手です。分野を絞って集中的に解きましょう。
+          💡 「{weakest.tag}」が最も苦手です。タップして文法ルールを確認しましょう。
         </ThemedText>
       )}
+      <AppButton
+        label="文法ルール一覧を見る"
+        variant="ghost"
+        onPress={() => router.push('/quiz/grammar' as never)}
+      />
     </Card>
   );
 }
@@ -308,6 +322,13 @@ const styles = StyleSheet.create({
   weakRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.half,
+  },
+  weakRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   safeArea: {
     flex: 1,

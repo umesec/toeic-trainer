@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarChart, type BarDatum } from '@/components/bar-chart';
@@ -27,6 +27,7 @@ import {
   currentPhase,
   dailyQuota,
   daysUntilExam,
+  feasibilityOf,
   CURRENT_SCORES,
   TARGET_SCORES,
   type StudyPlan,
@@ -38,8 +39,10 @@ import {
   loadCustomWords,
   loadDailyLogMap,
   loadDayLog,
+  loadDiagnosisResult,
   loadMistakes,
   loadMockHistory,
+  loadOnboardingDone,
   loadPlan,
   loadProgress,
   loadQuizStats,
@@ -47,6 +50,7 @@ import {
   loadStreak,
   savePlan,
   type DayLog,
+  type DiagnosisResult,
   type QuizStats,
 } from '@/lib/storage';
 
@@ -57,6 +61,7 @@ const FEATURES: {
   feature: FeatureKey;
   href: string;
 }[] = [
+  { emoji: '🩺', title: '診断テスト', subtitle: '実力把握・スタート地点を確認', feature: 'quiz', href: '/quiz/diagnosis' },
   { emoji: '📚', title: '単語カード', subtitle: 'SRSで効率よく暗記', feature: 'words', href: '/flashcards' },
   { emoji: '📝', title: 'クイズ', subtitle: 'Part 5 文法・語彙', feature: 'quiz', href: '/quiz' },
   { emoji: '🎧', title: '音声変化', subtitle: '聞き取れる耳を作る', feature: 'listening', href: '/listening' },
@@ -87,9 +92,18 @@ export default function HomeScreen() {
   const [dailyChart, setDailyChart] = useState<BarDatum[]>([]);
   const [scoreChart, setScoreChart] = useState<BarDatum[]>([]);
   const [mistakeCount, setMistakeCount] = useState(0);
+  const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null | undefined>(undefined);
+
+  // 初回起動時のみオンボーディングへリダイレクト
+  useEffect(() => {
+    loadOnboardingDone().then((done) => {
+      if (!done) router.replace('/onboarding' as never);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const reload = useCallback(async () => {
-    const [p, log, streak, stats, progress, customWords, logMap, mockHistory, mistakes, settings] =
+    const [p, log, streak, stats, progress, customWords, logMap, mockHistory, mistakes, settings, diag] =
       await Promise.all([
         loadPlan(),
         loadDayLog(today),
@@ -101,11 +115,13 @@ export default function HomeScreen() {
         loadMockHistory(),
         loadMistakes(),
         loadSettings(),
+        loadDiagnosisResult(),
       ]);
     setPlan(p);
     setDayLog(log);
     setStreakCount(streak.count);
     setQuizStats(stats);
+    setDiagnosis(diag);
     const wordIds = [...WORDS.map((w) => w.id), ...customWords.map((c) => c.id)];
     setDueCount(wordIds.filter((id) => progress[id] && isDue(progress[id], today)).length);
     setMistakeCount(mistakes.length);
@@ -175,6 +191,36 @@ export default function HomeScreen() {
               </ThemedView>
             </Pressable>
           </View>
+
+          {/* 診断テスト CTA（未受診時のみ） */}
+          {diagnosis === null && (
+            <Pressable
+              onPress={() => router.push('/quiz/diagnosis' as never)}
+              style={({ pressed }) => [styles.diagnosisBanner, pressed && styles.dimmed]}>
+              <View style={styles.diagnosisInner}>
+                <View style={{ flex: 1, gap: Spacing.half }}>
+                  <ThemedText type="smallBold" style={styles.heroTitle}>
+                    🩺 まず診断テストを受けよう
+                  </ThemedText>
+                  <ThemedText type="small" style={styles.heroTextDim}>
+                    約10分・現在のスコアを推定して最短学習ルートを提案します
+                  </ThemedText>
+                </View>
+                <ThemedText type="smallBold" style={styles.heroTitle}>▶</ThemedText>
+              </View>
+            </Pressable>
+          )}
+          {diagnosis && (
+            <Card style={styles.diagnosisDoneRow}>
+              <View style={{ flex: 1 }}>
+                <ThemedText type="small" themeColor="textSecondary">前回の診断スコア</ThemedText>
+                <ThemedText type="smallBold">{diagnosis.estimatedTotal}点（L {diagnosis.listening} / R {diagnosis.reading}）</ThemedText>
+              </View>
+              <Pressable onPress={() => router.push('/quiz/diagnosis' as never)} style={({ pressed }) => pressed && styles.dimmed}>
+                <ThemedText type="small" themeColor="accent">再診断 ▶</ThemedText>
+              </Pressable>
+            </Card>
+          )}
 
           {/* 学習プラン */}
           {plan ? (
@@ -305,6 +351,7 @@ function PlanSummary({
   const quota = dailyQuota(plan, today);
   const phase = currentPhase(plan, today);
   const phases = buildPhases(plan);
+  const feasibility = feasibilityOf(plan);
 
   if (days < 0) {
     return (
@@ -320,6 +367,19 @@ function PlanSummary({
 
   return (
     <>
+      {!feasibility.feasible && !feasibility.cautious && (
+        <Pressable onPress={onEdit} style={({ pressed }) => pressed && styles.dimmed}>
+          <Card style={[styles.feasibilityCard, { borderColor: theme.danger, backgroundColor: theme.dangerBg }]}>
+            <ThemedText type="smallBold" style={{ color: theme.danger }}>
+              ⚠️ 目標ペースがかなりハードです（1日 {feasibility.ptsPerDay.toFixed(1)} 点必要）
+            </ThemedText>
+            <ThemedText type="small">
+              月25点ペースで達成するには約 {feasibility.suggestedMonths} ヶ月必要です。プランを修正することをおすすめします。
+            </ThemedText>
+            <ThemedText type="small" style={{ color: theme.danger }}>タップして修正 ▶</ThemedText>
+          </Card>
+        </Pressable>
+      )}
       <HeroCard>
         <View style={styles.planHeader}>
           <ThemedText type="smallBold" style={styles.heroTitle}>
@@ -337,6 +397,11 @@ function PlanSummary({
         <ThemedText type="small" style={styles.heroTextDim}>
           「{phase.name}」— {phase.focus}
         </ThemedText>
+        {feasibility.cautious && (
+          <ThemedText type="small" style={[styles.heroTextDim, { opacity: 0.9 }]}>
+            💪 1日約 {feasibility.dailyMinutesNeeded} 分の継続が必要なペースです
+          </ThemedText>
+        )}
 
         <ThemedText type="smallBold" style={[styles.heroTitle, styles.menuTitle]}>
           今日のメニュー（目安 {quota.estMinutes}分）
@@ -439,12 +504,7 @@ function StatCard({ emoji, label, value }: { emoji: string; label: string; value
 
 /* ---------- プラン設定モーダル ---------- */
 
-const EXAM_DATE_PRESETS = [
-  { label: '1ヶ月後', days: 30 },
-  { label: '2ヶ月後', days: 60 },
-  { label: '3ヶ月後', days: 90 },
-  { label: '半年後', days: 180 },
-] as const;
+const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 function PlanModal({
   visible,
@@ -462,12 +522,36 @@ function PlanModal({
   onClear: () => void;
 }) {
   const theme = useTheme();
+  const todayYear = parseInt(today.slice(0, 4), 10);
+  const todayMonth = parseInt(today.slice(5, 7), 10);
+
+  const initDate = plan?.examDate ?? addDays(today, 90);
   const [target, setTarget] = useState<number>(plan?.targetScore ?? 700);
   const [current, setCurrent] = useState<number>(plan?.currentScore ?? 500);
-  const [examDate, setExamDate] = useState<string>(plan?.examDate ?? addDays(today, 90));
+  const [examYear, setExamYear] = useState<number>(parseInt(initDate.slice(0, 4), 10));
+  const [examMonth, setExamMonth] = useState<number>(parseInt(initDate.slice(5, 7), 10));
 
-  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(examDate) && examDate > today;
-  const valid = validDate && target > current;
+  const examDate = `${examYear}-${String(examMonth).padStart(2, '0')}-20`;
+  const isValidDate =
+    examYear > todayYear || (examYear === todayYear && examMonth > todayMonth);
+  const valid = isValidDate && target > current;
+
+  const tempPlan: StudyPlan = {
+    targetScore: target,
+    currentScore: current,
+    examDate,
+    startDate: plan?.startDate ?? today,
+  };
+  const feasibility = target > current && isValidDate ? feasibilityOf(tempPlan) : null;
+
+  const applyScore = (score: number) => {
+    setTarget(Math.min(900, score));
+  };
+  const applyMonths = (months: number) => {
+    const d = new Date(Date.UTC(todayYear, todayMonth - 1 + months, 20));
+    setExamYear(d.getUTCFullYear());
+    setExamMonth(d.getUTCMonth() + 1);
+  };
 
   const save = () => {
     if (!valid) return;
@@ -475,10 +559,11 @@ function PlanModal({
       targetScore: target,
       currentScore: current,
       examDate,
-      // 既存プランの編集では開始日を維持し、フェーズ計算の起点を変えない
       startDate: plan?.startDate ?? today,
     });
   };
+
+  const YEARS = [todayYear, todayYear + 1, todayYear + 2];
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -487,9 +572,7 @@ function PlanModal({
           <ScrollView contentContainerStyle={styles.modalScroll}>
             <ThemedText type="subtitle">学習プランの設定</ThemedText>
 
-            <ThemedText type="small" themeColor="textSecondary">
-              目標スコア
-            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">目標スコア</ThemedText>
             <View style={styles.chipRow}>
               {TARGET_SCORES.map((s) => (
                 <Chip key={s} label={`${s}`} selected={target === s} onPress={() => setTarget(s)} />
@@ -504,49 +587,87 @@ function PlanModal({
                 <Chip key={s} label={`${s}`} selected={current === s} onPress={() => setCurrent(s)} />
               ))}
             </View>
-
-            <ThemedText type="small" themeColor="textSecondary">
-              試験日
-            </ThemedText>
-            <View style={styles.chipRow}>
-              {EXAM_DATE_PRESETS.map((p) => {
-                const date = addDays(today, p.days);
-                return (
-                  <Chip
-                    key={p.label}
-                    label={p.label}
-                    selected={examDate === date}
-                    onPress={() => setExamDate(date)}
-                  />
-                );
-              })}
-            </View>
-            <ThemedView type="backgroundSelected" style={styles.inputWrap}>
-              <TextInput
-                value={examDate}
-                onChangeText={setExamDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={theme.textSecondary}
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={[styles.input, { color: theme.text }]}
-              />
-            </ThemedView>
-            {!validDate && (
-              <ThemedText type="small" style={{ color: theme.danger }}>
-                試験日は今日より後の YYYY-MM-DD 形式で入力してください
-              </ThemedText>
-            )}
-            {validDate && target <= current && (
+            {target <= current && (
               <ThemedText type="small" style={{ color: theme.danger }}>
                 目標スコアは現在のスコアより高く設定してください
               </ThemedText>
             )}
 
+            <ThemedText type="small" themeColor="textSecondary">試験日（年）</ThemedText>
+            <View style={styles.chipRow}>
+              {YEARS.map((y) => (
+                <Chip key={y} label={`${y}年`} selected={examYear === y} onPress={() => setExamYear(y)} />
+              ))}
+            </View>
+
+            <ThemedText type="small" themeColor="textSecondary">試験日（月）</ThemedText>
+            <View style={styles.chipRow}>
+              {MONTHS.map((m) => {
+                const isPast = examYear === todayYear && m <= todayMonth;
+                return (
+                  <Chip
+                    key={m}
+                    label={`${m}月`}
+                    selected={examMonth === m}
+                    onPress={() => !isPast && setExamMonth(m)}
+                    disabled={isPast}
+                  />
+                );
+              })}
+            </View>
+            {!isValidDate && (
+              <ThemedText type="small" style={{ color: theme.danger }}>
+                試験日は今日より後の月を選んでください
+              </ThemedText>
+            )}
+
+            {/* 実現可能性フィードバック */}
+            {feasibility && !feasibility.feasible && !feasibility.cautious && (
+              <View style={[styles.feasibilityCard, { backgroundColor: theme.dangerBg, borderColor: theme.danger }]}>
+                <ThemedText type="smallBold" style={{ color: theme.danger }}>
+                  ⚠️ この目標はかなり難しいペースです
+                </ThemedText>
+                <ThemedText type="small">
+                  必要な向上ペース: 1日 {feasibility.ptsPerDay.toFixed(1)} 点{'\n'}
+                  TOEICは継続的な学習で月20〜30点程度の向上が一般的です。
+                </ThemedText>
+                <View style={styles.feasibilityButtons}>
+                  <AppButton
+                    label={`目標を ${feasibility.suggestedScore}点にする`}
+                    variant="ghost"
+                    onPress={() => applyScore(feasibility.suggestedScore)}
+                  />
+                  <AppButton
+                    label={`試験日を ${feasibility.suggestedMonths}ヶ月後にする`}
+                    variant="ghost"
+                    onPress={() => applyMonths(feasibility.suggestedMonths)}
+                  />
+                </View>
+              </View>
+            )}
+            {feasibility?.cautious && (
+              <View style={[styles.feasibilityCard, { backgroundColor: theme.warningBg, borderColor: theme.warning }]}>
+                <ThemedText type="smallBold" style={{ color: theme.warning }}>
+                  💪 達成できますが、高い継続が必要です
+                </ThemedText>
+                <ThemedText type="small">
+                  1日約 {feasibility.dailyMinutesNeeded} 分以上の学習を毎日続けることが目安です。
+                </ThemedText>
+              </View>
+            )}
+            {feasibility?.feasible && (
+              <View style={[styles.feasibilityCard, { backgroundColor: theme.successBg, borderColor: theme.success }]}>
+                <ThemedText type="smallBold" style={{ color: theme.success }}>
+                  ✅ 現実的な目標設定です
+                </ThemedText>
+                <ThemedText type="small">
+                  1日約 {feasibility.dailyMinutesNeeded} 分の継続で達成できるペースです。
+                </ThemedText>
+              </View>
+            )}
+
             <View style={styles.modalButtons}>
-              {plan && (
-                <AppButton label="プランを削除" variant="ghost" onPress={onClear} />
-              )}
+              {plan && <AppButton label="プランを削除" variant="ghost" onPress={onClear} />}
               <AppButton label="キャンセル" variant="ghost" onPress={onClose} />
               <AppButton label="保存" onPress={save} disabled={!valid} />
             </View>
@@ -688,6 +809,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
   },
+  /* 診断バナー */
+  diagnosisBanner: {
+    borderRadius: Radius.lg,
+    backgroundColor: '#4F6EF7',
+    padding: Spacing.three,
+  },
+  diagnosisInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  diagnosisDoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   /* タイルグリッド */
   tileGrid: {
     flexDirection: 'row',
@@ -718,18 +855,22 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     marginBottom: Spacing.two,
   },
-  inputWrap: {
-    borderRadius: Radius.sm,
-  },
-  input: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two + 2,
-    fontSize: 15,
-  },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: Spacing.two,
     marginTop: Spacing.two,
+  },
+  feasibilityCard: {
+    borderWidth: 1.5,
+    borderRadius: Radius.md,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  feasibilityButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    marginTop: Spacing.one,
   },
 });
