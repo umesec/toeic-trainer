@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SpeakButton } from '@/components/speak-button';
@@ -89,6 +89,40 @@ export default function WordListScreen() {
     saveCustomWords(updated);
   };
 
+  const renderRow = useCallback(
+    ({ item: row }: { item: Row }) => {
+      const status = statusOf(progress[row.id], today);
+      return (
+        <ThemedView type="backgroundElement" style={styles.row}>
+          <View style={styles.rowMain}>
+            <View style={styles.wordLine}>
+              <ThemedText type="smallBold">{row.word}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                【{row.pos}】
+              </ThemedText>
+            </View>
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+              {row.meaning}
+            </ThemedText>
+          </View>
+          <ThemedText type="small" style={{ color: statusColors[status.status] }}>
+            {status.label}
+          </ThemedText>
+          <SpeakButton text={row.word} size={40} />
+          {row.custom && (
+            <Pressable
+              onPress={() => deleteCustom(row.id)}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+              <ThemedText type="default">🗑</ThemedText>
+            </Pressable>
+          )}
+        </ThemedView>
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [progress, today, statusColors, customWords]
+  );
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -112,37 +146,16 @@ export default function WordListScreen() {
           />
         </ThemedView>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
-          {rows.map((row) => {
-            const status = statusOf(progress[row.id], today);
-            return (
-              <ThemedView key={row.id} type="backgroundElement" style={styles.row}>
-                <View style={styles.rowMain}>
-                  <View style={styles.wordLine}>
-                    <ThemedText type="smallBold">{row.word}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      【{row.pos}】
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-                    {row.meaning}
-                  </ThemedText>
-                </View>
-                <ThemedText type="small" style={{ color: statusColors[status.status] }}>
-                  {status.label}
-                </ThemedText>
-                <SpeakButton text={row.word} size={40} />
-                {row.custom && (
-                  <Pressable
-                    onPress={() => deleteCustom(row.id)}
-                    style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-                    <ThemedText type="default">🗑</ThemedText>
-                  </Pressable>
-                )}
-              </ThemedView>
-            );
-          })}
-        </ScrollView>
+        <FlatList
+          data={rows}
+          keyExtractor={(row) => row.id}
+          renderItem={renderRow}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          initialNumToRender={16}
+          windowSize={7}
+          removeClippedSubviews
+        />
       </SafeAreaView>
     </ThemedView>
   );
