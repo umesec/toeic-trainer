@@ -419,7 +419,7 @@ export default function MockTestScreen() {
                   questions={plan.part34[itemIdx].questions.map((q) => ({ label: q.q, choices: q.choices }))}
                   picked={a.p34[itemIdx]}
                   onPick={(qi, ci) => {
-                    a.p34[itemIdx][qi] = ci;
+                    a.p34[itemIdx] = a.p34[itemIdx].map((v, i) => (i === qi ? ci : v));
                     rerender();
                   }}
                   onNext={advance}
@@ -468,7 +468,7 @@ export default function MockTestScreen() {
                   questions={plan.part6[itemIdx].blanks.map((b) => ({ label: `空所 [${b.no}]`, choices: b.choices }))}
                   picked={a.p6[itemIdx]}
                   onPick={(qi, ci) => {
-                    a.p6[itemIdx][qi] = ci;
+                    a.p6[itemIdx] = a.p6[itemIdx].map((v, i) => (i === qi ? ci : v));
                     rerender();
                   }}
                   onNext={advance}
@@ -485,7 +485,7 @@ export default function MockTestScreen() {
                   questions={plan.part7[itemIdx].questions.map((q, i) => ({ label: `Q${i + 1}. ${q.q}`, choices: q.choices }))}
                   picked={a.p7[itemIdx]}
                   onPick={(qi, ci) => {
-                    a.p7[itemIdx][qi] = ci;
+                    a.p7[itemIdx] = a.p7[itemIdx].map((v, i) => (i === qi ? ci : v));
                     rerender();
                   }}
                   onNext={advance}
