@@ -138,7 +138,7 @@ export default function HomeScreen() {
       const d = logMap[date];
       days.push({
         label: date.slice(5).replace('-', '/'),
-        value: d ? d.cards + d.quiz + d.listening : 0,
+        value: d ? d.cards + d.quiz + d.listening + (d.reading ?? 0) : 0,
       });
     }
     setDailyChart(days);
@@ -283,7 +283,13 @@ export default function HomeScreen() {
           <Card>
             <ThemedText type="smallBold">📊 直近14日の学習量</ThemedText>
             {dailyChart.some((d) => d.value > 0) ? (
-              <BarChart data={dailyChart} color={theme.accent} />
+              <>
+                <BarChart data={dailyChart} color={theme.accent} showValues />
+                <ThemedText type="small" themeColor="textSecondary">
+                  合計 {dailyChart.reduce((s, d) => s + d.value, 0)} 回 ・ 1日平均{' '}
+                  {(dailyChart.reduce((s, d) => s + d.value, 0) / dailyChart.length).toFixed(1)} 回
+                </ThemedText>
+              </>
             ) : (
               <ThemedText type="small" themeColor="textSecondary">
                 まだデータがありません。今日の学習を始めましょう！

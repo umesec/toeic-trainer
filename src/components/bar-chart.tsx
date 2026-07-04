@@ -18,23 +18,33 @@ export function BarChart({
   color,
   height = 96,
   maxValue,
+  showValues = false,
 }: {
   data: BarDatum[];
   color?: string;
   height?: number;
   maxValue?: number;
+  /** 各バーの上に値を数字で表示する（0は省略） */
+  showValues?: boolean;
 }) {
   const theme = useTheme();
   const barColor = color ?? theme.accent;
   const max = Math.max(1, maxValue ?? Math.max(...data.map((d) => d.value)));
   // ラベルは最大7個程度に間引く
   const labelStep = Math.max(1, Math.ceil(data.length / 7));
+  // 数字表示分の余白をグラフ高さに追加する
+  const valueSpace = showValues ? 14 : 0;
 
   return (
     <View>
-      <View style={[styles.bars, { height }]}>
+      <View style={[styles.bars, { height: height + valueSpace }]}>
         {data.map((d, i) => (
           <View key={`${d.label}-${i}`} style={styles.barColumn}>
+            {showValues && d.value > 0 && (
+              <ThemedText type="small" themeColor="textSecondary" style={styles.valueText}>
+                {d.value}
+              </ThemedText>
+            )}
             {d.value > 0 && (
               <View
                 style={[
@@ -83,5 +93,10 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 9,
     lineHeight: 12,
+  },
+  valueText: {
+    fontSize: 9,
+    lineHeight: 12,
+    marginBottom: 1,
   },
 });
