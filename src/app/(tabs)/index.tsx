@@ -7,6 +7,7 @@ import { BarChart, type BarDatum } from '@/components/bar-chart';
 import { FeatureTile } from '@/components/feature-tile';
 import { HeroCard } from '@/components/hero-card';
 import { ProgressBar } from '@/components/progress-bar';
+import { ScoreSlider } from '@/components/score-slider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
@@ -27,8 +28,6 @@ import {
   dailyQuota,
   daysUntilExam,
   feasibilityOf,
-  CURRENT_SCORES,
-  TARGET_SCORES,
   type StudyPlan,
 } from '@/lib/plan';
 import { syncReminders } from '@/lib/reminders';
@@ -556,21 +555,21 @@ function PlanModal({
           <ScrollView contentContainerStyle={styles.modalScroll}>
             <ThemedText type="subtitle">学習プランの設定</ThemedText>
 
-            <ThemedText type="small" themeColor="textSecondary">目標スコア</ThemedText>
-            <View style={styles.chipRow}>
-              {TARGET_SCORES.map((s) => (
-                <Chip key={s} label={`${s}`} selected={target === s} onPress={() => setTarget(s)} />
-              ))}
-            </View>
+            <ScoreSlider
+              label="目標スコア"
+              value={target}
+              min={300}
+              max={990}
+              onChange={setTarget}
+            />
 
-            <ThemedText type="small" themeColor="textSecondary">
-              現在のスコア（未受験なら目安でOK）
-            </ThemedText>
-            <View style={styles.chipRow}>
-              {CURRENT_SCORES.map((s) => (
-                <Chip key={s} label={`${s}`} selected={current === s} onPress={() => setCurrent(s)} />
-              ))}
-            </View>
+            <ScoreSlider
+              label="現在のスコア（未受験なら目安でOK）"
+              value={current}
+              min={10}
+              max={985}
+              onChange={setCurrent}
+            />
             {target <= current && (
               <ThemedText type="small" style={{ color: theme.danger }}>
                 目標スコアは現在のスコアより高く設定してください
