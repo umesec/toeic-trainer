@@ -1,5 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,11 +16,11 @@ import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
-import { isDue, newCardState, review, todayStr, type Grade } from '@/lib/srs';
+import { isDue, newCardState, review, todayStr } from '@/lib/srs';
 import {
   bumpDaily,
   loadCustomWords,
@@ -23,8 +32,8 @@ import {
   type ProgressMap,
 } from '@/lib/storage';
 
-/** 1セッションで出す新規カードの上限 */
 const NEW_PER_SESSION = 10;
+const SWIPE_THRESHOLD = 80;
 
 const toWord = (c: CustomWord): Word => ({
   id: c.id,
@@ -63,13 +72,19 @@ export default function FlashcardsScreen() {
       setQueue(buildQueue(p, [...WORDS, ...cw.map(toWord)], today));
       setReady(true);
     })();
-    // 初回マウント時のみ読み込む
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const current = queue[0];
 
-  const onGrade = (grade: Grade) => {
+  // 単語が切り替わったら必ず表を表示に戻す
+  useEffect(() => {
+    setFlipped(false);
+  }, [current?.id]);
+
+  const translateX = useSharedValue(0);
+
+  const gradeAndReset = (grade: 'easy' | 'hard') => {
     if (!current) return;
     const state = progress[current.id] ?? newCardState(today);
     const next = review(state, grade, today);
@@ -80,9 +95,48 @@ export default function FlashcardsScreen() {
     bumpDaily(today, 'cards');
     setFlipped(false);
     setDoneCount((d) => d + 1);
-    // 「もう一度」は列の後ろに回して同セッション内で再出題
-    setQueue((q) => (grade === 'again' ? [...q.slice(1), current] : q.slice(1)));
+    setQueue((q) => (grade === 'hard' ? [...q.slice(1), current] : q.slice(1)));
   };
+
+  const pan = Gesture.Pan()
+    .enabled(flipped)
+    .onUpdate((e) => {
+      translateX.value = e.translationX;
+    })
+    .onEnd((e) => {
+      if (e.translationX > SWIPE_THRESHOLD) {
+        runOnJS(gradeAndReset)('easy');
+        translateX.value = withSpring(0);
+      } else if (e.translationX < -SWIPE_THRESHOLD) {
+        runOnJS(gradeAndReset)('hard');
+        translateX.value = withSpring(0);
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const cardAnimStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      {
+        rotate:
+          interpolate(translateX.value, [-160, 160], [-12, 12], Extrapolation.CLAMP) + 'deg',
+      },
+    ],
+  }));
+
+  const rightLabelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [20, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+  }));
+  const leftLabelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [-20, -SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+  }));
+  const rightTintStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [20, SWIPE_THRESHOLD], [0, 0.18], Extrapolation.CLAMP),
+  }));
+  const leftTintStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [-20, -SWIPE_THRESHOLD], [0, 0.18], Extrapolation.CLAMP),
+  }));
 
   const startMore = () => {
     setQueue(buildQueue(progress, allWords, today));
@@ -113,54 +167,74 @@ export default function FlashcardsScreen() {
         </View>
 
         {!ready ? null : current ? (
-          <>
-            <Pressable style={styles.cardWrap} onPress={() => setFlipped((f) => !f)}>
-              <Card style={styles.card}>
-                <View style={styles.wordRow}>
-                  <ThemedText type="subtitle">{current.word}</ThemedText>
-                  <SpeakButton text={current.word} />
-                </View>
-                {flipped ? (
-                  <View style={styles.back}>
-                    <ThemedText type="smallBold" style={styles.pos}>
-                      【{current.pos}】
-                    </ThemedText>
-                    <ThemedText type="default">{current.meaning}</ThemedText>
-                    {!!current.example && (
-                      <View style={styles.exampleBlock}>
-                        <View style={styles.wordRow}>
-                          <ThemedText type="small" style={styles.example}>
-                            {current.example}
-                          </ThemedText>
-                          <SpeakButton text={current.example} />
-                        </View>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {current.exampleJa}
+          <View style={styles.cardArea}>
+            <GestureDetector gesture={pan}>
+              <Animated.View style={[styles.cardWrap, cardAnimStyle]}>
+                {/* 色オーバーレイ */}
+                <Animated.View
+                  style={[styles.tintOverlay, { backgroundColor: theme.success }, rightTintStyle]}
+                  pointerEvents="none"
+                />
+                <Animated.View
+                  style={[styles.tintOverlay, { backgroundColor: theme.danger }, leftTintStyle]}
+                  pointerEvents="none"
+                />
+
+                {/* スワイプラベル */}
+                <Animated.View style={[styles.swipeLabel, styles.swipeLabelRight, rightLabelStyle]}>
+                  <ThemedText type="smallBold" style={{ color: theme.success }}>簡単 ✓</ThemedText>
+                </Animated.View>
+                <Animated.View style={[styles.swipeLabel, styles.swipeLabelLeft, leftLabelStyle]}>
+                  <ThemedText type="smallBold" style={{ color: theme.danger }}>✗ 難しい</ThemedText>
+                </Animated.View>
+
+                <Pressable style={styles.cardPressable} onPress={() => setFlipped((f) => !f)}>
+                  <Card style={styles.card}>
+                    <View style={styles.wordRow}>
+                      <ThemedText type="subtitle">{current.word}</ThemedText>
+                      <SpeakButton text={current.word} />
+                    </View>
+
+                    {flipped ? (
+                      <View style={styles.back}>
+                        <ThemedText type="smallBold" style={styles.pos}>
+                          【{current.pos}】
                         </ThemedText>
+                        <ThemedText type="default">{current.meaning}</ThemedText>
+                        {!!current.example && (
+                          <View style={styles.exampleBlock}>
+                            <View style={styles.wordRow}>
+                              <ThemedText type="small" style={styles.example}>
+                                {current.example}
+                              </ThemedText>
+                              <SpeakButton text={current.example} />
+                            </View>
+                            <ThemedText type="small" themeColor="textSecondary">
+                              {current.exampleJa}
+                            </ThemedText>
+                          </View>
+                        )}
                       </View>
+                    ) : (
+                      <ThemedText type="small" themeColor="textSecondary">
+                        タップして意味を表示
+                      </ThemedText>
                     )}
-                  </View>
-                ) : (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    タップして意味を表示
-                  </ThemedText>
-                )}
-              </Card>
-            </Pressable>
+                  </Card>
+                </Pressable>
+              </Animated.View>
+            </GestureDetector>
 
             {flipped ? (
-              <View style={styles.gradeRow}>
-                <GradeButton label="もう一度" color={theme.danger} onPress={() => onGrade('again')} />
-                <GradeButton label="難しい" color={theme.warning} onPress={() => onGrade('hard')} />
-                <GradeButton label="普通" color={theme.accent} onPress={() => onGrade('good')} />
-                <GradeButton label="簡単" color={theme.success} onPress={() => onGrade('easy')} />
-              </View>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.swipeHint}>
+                ← 難しい　　　簡単 →
+              </ThemedText>
             ) : (
-              <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-                思い出してからカードをタップ →「もう一度〜簡単」で自己評価すると、忘却曲線に合わせて次回の出題日が決まります
+              <ThemedText type="small" themeColor="textSecondary" style={styles.swipeHint}>
+                思い出してからタップして確認
               </ThemedText>
             )}
-          </>
+          </View>
         ) : (
           <Card style={styles.doneCard}>
             <ThemedText type="subtitle">🎉 今日の分は完了！</ThemedText>
@@ -174,27 +248,6 @@ export default function FlashcardsScreen() {
 
       <AddWordModal visible={showAdd} onClose={() => setShowAdd(false)} onSave={onAddWord} />
     </ThemedView>
-  );
-}
-
-function GradeButton({
-  label,
-  color,
-  onPress,
-}: {
-  label: string;
-  color: string;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.gradeButton, { backgroundColor: color }, pressed && styles.pressed]}>
-      <ThemedText type="smallBold" style={{ color: theme.onAccent }}>
-        {label}
-      </ThemedText>
-    </Pressable>
   );
 }
 
@@ -304,8 +357,43 @@ const styles = StyleSheet.create({
   navButton: {
     flex: 1,
   },
+  cardArea: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: Spacing.three,
+  },
   cardWrap: {
-    flexGrow: 0,
+    position: 'relative',
+  },
+  cardPressable: {
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+  },
+  tintOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: Radius.lg,
+    zIndex: 1,
+  },
+  swipeLabel: {
+    position: 'absolute',
+    top: Spacing.four,
+    zIndex: 2,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.sm,
+    borderWidth: 2,
+  },
+  swipeLabelRight: {
+    right: Spacing.three,
+    borderColor: 'transparent',
+  },
+  swipeLabelLeft: {
+    left: Spacing.three,
+    borderColor: 'transparent',
   },
   card: {
     minHeight: 260,
@@ -336,28 +424,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     flexShrink: 1,
   },
-  gradeRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    justifyContent: 'center',
-  },
-  gradeButton: {
-    flex: 1,
-    maxWidth: 110,
-    paddingVertical: Spacing.three - 4,
-    borderRadius: Spacing.three,
-    alignItems: 'center',
-  },
-  hint: {
+  swipeHint: {
     textAlign: 'center',
   },
   doneCard: {
     alignItems: 'center',
     gap: Spacing.three,
     padding: Spacing.four,
-  },
-  pressed: {
-    opacity: 0.6,
   },
   modalBackdrop: {
     flex: 1,

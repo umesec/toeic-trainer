@@ -99,10 +99,14 @@ export function resolveMistake(entry: MistakeEntry): ResolvedMistake | null {
       const set = PART7_SETS.find((s) => s.id === setId);
       const q = set?.questions[qi];
       if (!set || !q) return null;
+      const docTypes = set.passages.map((p) => p.docType).join(' + ');
+      const passageText = set.passages.map((p, i) =>
+        set.passages.length > 1 ? `【文書${i + 1}: ${p.docType}】\n${p.text}` : p.text
+      ).join('\n\n');
       return {
-        header: `Part 7【${set.docType}】`,
+        header: `Part 7【${docTypes}】`,
         prompt: q.q,
-        passage: set.passage,
+        passage: passageText,
         choices: q.choices,
         answer: q.answer,
         explanation: q.explanation,
