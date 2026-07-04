@@ -141,6 +141,7 @@ export default function MockTestScreen() {
   const [remaining, setRemaining] = useState(0);
   const [history, setHistory] = useState<MockResult[]>([]);
   const answersRef = useRef<Answers | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const [, setTick] = useState(0);
   const rerender = () => setTick((t) => t + 1);
 
@@ -178,6 +179,11 @@ export default function MockTestScreen() {
     finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining]);
+
+  // 設問の切り替え・結果表示のたびにスクロールを先頭へ戻す
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [phase, sectionIdx, itemIdx]);
 
   // リスニングセクションは設問が変わるたびに自動再生（本番同様、問題ごとにアクセントが変わる）
   useEffect(() => {
@@ -317,7 +323,7 @@ export default function MockTestScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {phase === 'intro' && (
             <>
               <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
