@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -33,27 +33,29 @@ export function ScoreSlider({
   const theme = useTheme();
   const [trackWidth, setTrackWidth] = useState(0);
 
-  // ドラッグ中のジェスチャクロージャが古い値を掴まないよう ref 経由で参照する
-  const latest = useRef({ value, min, max, step, trackWidth, onChange });
-  latest.current = { value, min, max, step, trackWidth, onChange };
+  // 同じ値での onChange は useState のバイパスに任せるため、現在値との比較は不要
+  const setFromX = useCallback(
+    (x: number) => {
+      if (trackWidth <= 0) return;
+      const ratio = Math.max(0, Math.min(1, x / trackWidth));
+      const snapped = Math.round((min + ratio * (max - min)) / step) * step;
+      onChange(Math.max(min, Math.min(max, snapped)));
+    },
+    [trackWidth, min, max, step, onChange]
+  );
 
-  const setFromX = (x: number) => {
-    const { value: cur, min: lo, max: hi, step: st, trackWidth: w, onChange: emit } = latest.current;
-    if (w <= 0) return;
-    const ratio = Math.max(0, Math.min(1, x / w));
-    const snapped = Math.round((lo + ratio * (hi - lo)) / st) * st;
-    const next = Math.max(lo, Math.min(hi, snapped));
-    if (next !== cur) emit(next);
-  };
-
-  const pan = Gesture.Pan()
-    .minDistance(0)
-    .onBegin((e) => {
-      runOnJS(setFromX)(e.x);
-    })
-    .onUpdate((e) => {
-      runOnJS(setFromX)(e.x);
-    });
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .onBegin((e) => {
+          runOnJS(setFromX)(e.x);
+        })
+        .onUpdate((e) => {
+          runOnJS(setFromX)(e.x);
+        }),
+    [setFromX]
+  );
 
   const nudge = (dir: -1 | 1) => {
     onChange(Math.max(min, Math.min(max, value + dir * step)));
