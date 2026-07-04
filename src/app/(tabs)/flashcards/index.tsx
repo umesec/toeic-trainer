@@ -76,6 +76,8 @@ export default function FlashcardsScreen() {
   }, []);
 
   const current = queue[0];
+  // 「今日の分は完了」カードで新規カードの残数を出すために使う
+  const freshRemaining = allWords.filter((w) => !progress[w.id]).length;
 
   // 単語が切り替わったら必ず表を表示に戻す
   useEffect(() => {
@@ -255,10 +257,22 @@ export default function FlashcardsScreen() {
         ) : (
           <Card style={styles.doneCard}>
             <ThemedText type="subtitle">🎉 今日の分は完了！</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              復習カードはすべて消化しました。余力があれば新規カードを追加で学習できます。
-            </ThemedText>
-            <AppButton label={`新規カードをあと${NEW_PER_SESSION}枚`} onPress={startMore} />
+            {freshRemaining > 0 ? (
+              <>
+                <ThemedText type="small" themeColor="textSecondary">
+                  復習カードはすべて消化しました。余力があれば新規カードを追加で学習できます。
+                </ThemedText>
+                <AppButton
+                  label={`新規カードをあと${Math.min(NEW_PER_SESSION, freshRemaining)}枚`}
+                  onPress={startMore}
+                />
+              </>
+            ) : (
+              <ThemedText type="small" themeColor="textSecondary">
+                収録されている単語はすべて学習済みです。おつかれさまでした！
+                復習カードが貯まったらまたここに表示されます。
+              </ThemedText>
+            )}
           </Card>
         )}
       </SafeAreaView>

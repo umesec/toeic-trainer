@@ -7,6 +7,7 @@ import {
   dailyQuota,
   daysBetween,
   daysUntilExam,
+  feasibilityOf,
   intensityOf,
   type StudyPlan,
 } from '../plan.ts';
@@ -64,6 +65,20 @@ test('dailyQuota: 正のノルマと目安時間を返す', () => {
     q.estMinutes,
     Math.round(q.cards * 0.5 + q.quiz * 1.5 + q.listening * 10 + q.reading * 8)
   );
+});
+
+test('feasibilityOf: suggestedScore は必ず5点刻み・990以下（TOEICの実スコア体系）', () => {
+  // 100日 × 1.5 = 150点分 → 500 + 150 = 650（丸め不要のケース）
+  const f1 = feasibilityOf(plan());
+  assert.equal(f1.suggestedScore % 5, 0);
+  assert.ok(f1.suggestedScore <= 990);
+  // 108日 × 1.5 = 162 → 662 になっていた回帰ケース。5点刻みへ丸められること
+  const f2 = feasibilityOf(plan({ examDate: '2026-10-18' }));
+  assert.equal(f2.suggestedScore % 5, 0);
+  assert.ok(f2.suggestedScore <= 990);
+  // 長期間プランでも 990 を超えない
+  const f3 = feasibilityOf(plan({ currentScore: 800, examDate: '2027-07-02' }));
+  assert.equal(f3.suggestedScore, 990);
 });
 
 test('短期プランでもフェーズ計算が壊れない', () => {

@@ -321,7 +321,7 @@ export default function MockTestScreen() {
           {phase === 'intro' && (
             <>
               <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary">← クイズに戻る</ThemedText>
+                <ThemedText type="linkPrimary">← 戻る</ThemedText>
               </Pressable>
               <ThemedText type="subtitle">模試</ThemedText>
 

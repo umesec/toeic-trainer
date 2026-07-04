@@ -93,7 +93,7 @@ export default function MistakesScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← クイズに戻る</ThemedText>
+            <ThemedText type="linkPrimary">← 戻る</ThemedText>
           </Pressable>
           <ThemedText type="subtitle">📓 間違いノート</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">

@@ -34,7 +34,7 @@ export default function Part34Screen() {
           ) : (
             <>
               <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary">← 音声変化の一覧に戻る</ThemedText>
+                <ThemedText type="linkPrimary">← リスニングの一覧に戻る</ThemedText>
               </Pressable>
               <ThemedText type="subtitle">Part 3/4 会話・トーク</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">

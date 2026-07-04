@@ -20,13 +20,14 @@ const LABELS = ['A', 'B', 'C'] as const;
 export default function Part2Screen() {
   const router = useRouter();
   const theme = useTheme();
-  const [order] = useState(() => shuffle(PART2_ITEMS));
+  const [order, setOrder] = useState(() => shuffle(PART2_ITEMS));
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(0);
 
-  const item = order[index % order.length];
+  const finished = index >= order.length;
+  const item = order[Math.min(index, order.length - 1)];
 
   /** 質問→A→B→C の順で連続再生 */
   const playAll = () => {
@@ -52,17 +53,39 @@ export default function Part2Screen() {
     setSelected(null);
   };
 
+  const restart = () => {
+    setOrder(shuffle(PART2_ITEMS));
+    setIndex(0);
+    setSelected(null);
+    setScore(0);
+    setAnswered(0);
+  };
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← 音声変化の一覧に戻る</ThemedText>
+            <ThemedText type="linkPrimary">← リスニングの一覧に戻る</ThemedText>
           </Pressable>
 
           <ThemedText type="subtitle">Part 2 応答問題</ThemedText>
+
+          {finished ? (
+            <Card style={styles.doneCard}>
+              <ThemedText type="subtitle">🎉 全問終了！</ThemedText>
+              <ThemedText type="default">
+                {order.length} 問中 {score} 問正解
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                お疲れさまでした。順番を変えてもう一度挑戦できます。
+              </ThemedText>
+              <AppButton label="もう一度最初から" onPress={restart} />
+            </Card>
+          ) : (
+            <>
           <ThemedText type="small" themeColor="textSecondary">
-            第 {(index % order.length) + 1} 問 ・ 正解 {score} / {answered}　—　質問と応答(A)(B)(C)を聞いて、最も適切な応答を選んでください。本番同様、文字は読まずに耳だけで挑戦しましょう。
+            第 {index + 1} / {order.length} 問 ・ 正解 {score} / {answered}　—　質問と応答(A)(B)(C)を聞いて、最も適切な応答を選んでください。本番同様、文字は読まずに耳だけで挑戦しましょう。
           </ThemedText>
 
           <View style={styles.playRow}>
@@ -123,7 +146,9 @@ export default function Part2Screen() {
                 </ThemedText>
                 <ThemedText type="small">💡 {item.explanation}</ThemedText>
               </Card>
-              <AppButton label="次の問題へ" onPress={next} />
+              <AppButton label={index + 1 < order.length ? '次の問題へ' : '結果を見る'} onPress={next} />
+            </>
+          )}
             </>
           )}
         </ScrollView>
@@ -174,5 +199,10 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.6,
+  },
+  doneCard: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.four,
   },
 });

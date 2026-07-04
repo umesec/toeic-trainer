@@ -16,9 +16,9 @@ export default function GuideScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Pressable
-            onPress={() => router.push('/mypage' as never)}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/mypage' as never))}
             style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← マイページに戻る</ThemedText>
+            <ThemedText type="linkPrimary">← 戻る</ThemedText>
           </Pressable>
           <ThemedText type="subtitle">TOEIC ガイド</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">

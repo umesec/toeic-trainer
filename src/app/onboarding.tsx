@@ -42,7 +42,8 @@ export default function OnboardingScreen() {
 
   const goToDiagnosis = async () => {
     await saveOnboardingDone();
-    router.replace('/quiz/diagnosis' as never);
+    router.replace('/' as never);
+    router.push('/quiz/diagnosis' as never);
   };
 
   const skip = async () => {

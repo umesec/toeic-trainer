@@ -81,8 +81,10 @@ export default function StatsScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← ホームに戻る</ThemedText>
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/' as never))}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <ThemedText type="linkPrimary">← 戻る</ThemedText>
           </Pressable>
           <ThemedText type="subtitle">学習分析</ThemedText>
 

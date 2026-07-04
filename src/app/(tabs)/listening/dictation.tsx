@@ -17,18 +17,21 @@ import { normalizeSentence, shuffle, splitByFocus } from '@/lib/util';
 export default function DictationScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const [order] = useState(() => shuffle(DICTATION_ITEMS));
+  const [order, setOrder] = useState(() => shuffle(DICTATION_ITEMS));
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
   const [checked, setChecked] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
 
-  const item = order[index % order.length];
+  const finished = index >= order.length;
+  const item = order[Math.min(index, order.length - 1)];
   const ruleName = SOUND_CHANGE_RULES.find((r) => r.id === item.ruleId)?.name ?? '';
   const correct = normalizeSentence(input) === normalizeSentence(item.sentence);
   const [before, focus, after] = splitByFocus(item.sentence, item.focus);
 
   const check = () => {
     setChecked(true);
+    if (correct) setCorrectCount((n) => n + 1);
     const today = todayStr();
     bumpDaily(today, 'listening');
     recordStudy(today);
@@ -40,17 +43,39 @@ export default function DictationScreen() {
     setChecked(false);
   };
 
+  const restart = () => {
+    setOrder(shuffle(DICTATION_ITEMS));
+    setIndex(0);
+    setInput('');
+    setChecked(false);
+    setCorrectCount(0);
+  };
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← 音声変化の一覧に戻る</ThemedText>
+            <ThemedText type="linkPrimary">← リスニングの一覧に戻る</ThemedText>
           </Pressable>
 
           <ThemedText type="subtitle">ディクテーション</ThemedText>
+
+          {finished ? (
+            <Card style={styles.doneCard}>
+              <ThemedText type="subtitle">🎉 全問終了！</ThemedText>
+              <ThemedText type="default">
+                {order.length} 問中 {correctCount} 問正解
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                お疲れさまでした。順番を変えてもう一度挑戦できます。
+              </ThemedText>
+              <AppButton label="もう一度最初から" onPress={restart} />
+            </Card>
+          ) : (
+            <>
           <ThemedText type="small" themeColor="textSecondary">
-            第 {(index % order.length) + 1} 問 ・ 音声を聞いて、聞こえた英文をそのまま入力してください。
+            第 {index + 1} / {order.length} 問 ・ 音声を聞いて、聞こえた英文をそのまま入力してください。
           </ThemedText>
 
           <View style={styles.playRow}>
@@ -101,7 +126,9 @@ export default function DictationScreen() {
                   💡 ポイント（{ruleName}）: {item.explanation}
                 </ThemedText>
               </Card>
-              <AppButton label="次の問題へ" onPress={next} />
+              <AppButton label={index + 1 < order.length ? '次の問題へ' : '結果を見る'} onPress={next} />
+            </>
+          )}
             </>
           )}
         </ScrollView>
@@ -146,5 +173,10 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.6,
+  },
+  doneCard: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.four,
   },
 });

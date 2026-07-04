@@ -54,9 +54,12 @@ export interface FeasibilityResult {
   dailyMinutesNeeded: number;
   /** 月25点ペースで達成するのに必要な月数 */
   suggestedMonths: number;
-  /** 試験日までに現実的に到達できるスコアの上限（1.5pt/dayベース、上限900） */
+  /** 試験日までに現実的に到達できるスコアの上限（1.5pt/dayベース、5点刻み、上限990） */
   suggestedScore: number;
 }
+
+/** TOEICスコアは5点刻みのため、提案値は必ず5の倍数に丸める */
+const round5 = (n: number) => Math.round(n / 5) * 5;
 
 export function daysBetween(from: string, to: string): number {
   const parse = (s: string) => {
@@ -80,7 +83,7 @@ export function feasibilityOf(plan: StudyPlan): FeasibilityResult {
   const cautious = ptsPerDay > 1.0 && ptsPerDay <= 2.0;
   const dailyMinutesNeeded = feasible ? 60 : cautious ? 90 : 120;
   const suggestedMonths = Math.max(1, Math.ceil(gap / 25));
-  const suggestedScore = Math.min(900, Math.round(plan.currentScore + days * 1.5));
+  const suggestedScore = Math.min(990, round5(plan.currentScore + days * 1.5));
   return { ptsPerDay, feasible, cautious, dailyMinutesNeeded, suggestedMonths, suggestedScore };
 }
 
@@ -194,5 +197,5 @@ export function dailyQuota(plan: StudyPlan, today: string): DailyQuota {
   return { ...base, estMinutes };
 }
 
-export const TARGET_SCORES = [500, 600, 700, 800, 900] as const;
-export const CURRENT_SCORES = [300, 400, 500, 600, 700, 800] as const;
+export const TARGET_SCORES = [500, 600, 700, 800, 900, 990] as const;
+export const CURRENT_SCORES = [300, 400, 500, 600, 700, 800, 900] as const;

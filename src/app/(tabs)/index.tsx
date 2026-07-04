@@ -527,7 +527,9 @@ function PlanModal({
   const feasibility = target > current && isValidDate ? feasibilityOf(tempPlan) : null;
 
   const applyScore = (score: number) => {
-    setTarget(Math.min(900, score));
+    // TOEICスコアは10〜990点・5点刻み。提案値が万一崩れていても正規化して受ける
+    const rounded = Math.round(score / 5) * 5;
+    setTarget(Math.max(10, Math.min(990, rounded)));
   };
   const applyMonths = (months: number) => {
     const d = new Date(Date.UTC(todayYear, todayMonth - 1 + months, 20));
