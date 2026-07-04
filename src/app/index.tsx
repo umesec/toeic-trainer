@@ -7,7 +7,6 @@ import { BarChart, type BarDatum } from '@/components/bar-chart';
 import { FeatureTile } from '@/components/feature-tile';
 import { HeroCard } from '@/components/hero-card';
 import { ProgressBar } from '@/components/progress-bar';
-import { SettingsModal } from '@/components/settings-modal';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
@@ -19,7 +18,7 @@ import {
   TopContentInset,
   type FeatureKey,
 } from '@/constants/theme';
-import { useShadows, useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
 import { setSpeechRateScale } from '@/lib/speech';
 import {
@@ -79,7 +78,6 @@ const FEATURES: {
 export default function HomeScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const shadows = useShadows();
   const today = todayStr();
 
   const [plan, setPlan] = useState<StudyPlan | null>(null);
@@ -88,7 +86,6 @@ export default function HomeScreen() {
   const [quizStats, setQuizStats] = useState<QuizStats>({ answered: 0, correct: 0 });
   const [dueCount, setDueCount] = useState(0);
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [dailyChart, setDailyChart] = useState<BarDatum[]>([]);
   const [scoreChart, setScoreChart] = useState<BarDatum[]>([]);
   const [mistakeCount, setMistakeCount] = useState(0);
@@ -175,21 +172,10 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.titleRow}>
-            <View>
-              <ThemedText type="small" themeColor="textSecondary">
-                こんにちは 👋
-              </ThemedText>
-              <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
-            </View>
-            <Pressable
-              onPress={() => setShowSettings(true)}
-              style={({ pressed }) => pressed && styles.dimmed}>
-              <ThemedView
-                type="backgroundElement"
-                style={[styles.settingsButton, shadows.card]}>
-                <ThemedText style={styles.settingsIcon}>⚙️</ThemedText>
-              </ThemedView>
-            </Pressable>
+            <ThemedText type="small" themeColor="textSecondary">
+              こんにちは 👋
+            </ThemedText>
+            <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
           </View>
 
           {/* 診断テスト CTA（未受診時のみ） */}
@@ -312,12 +298,6 @@ export default function HomeScreen() {
           </Card>
         </ScrollView>
       </SafeAreaView>
-
-      <SettingsModal
-        visible={showSettings}
-        onClose={() => setShowSettings(false)}
-        onDataChanged={reload}
-      />
 
       <PlanModal
         // プラン読込・変更時に再マウントして useState の初期値へ反映させる
@@ -700,20 +680,7 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  settingsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsIcon: {
-    fontSize: 20,
-    lineHeight: 26,
+    gap: Spacing.half,
   },
   dimmed: {
     opacity: 0.6,

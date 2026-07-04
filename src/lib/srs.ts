@@ -59,6 +59,33 @@ export function todayStr(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+export interface WordMasteryCounts {
+  untouched: number;
+  mastered: number;
+  due: number;
+  learning: number;
+}
+
+/**
+ * 単語IDリストを定着状況別に集計する。
+ * 判定の優先順位は src/app/flashcards/list.tsx の statusOf() と同一（未着手→定着→復習待ち→学習中）にすること。
+ */
+export function classifyWordCounts(
+  ids: string[],
+  progress: Record<string, CardState | undefined>,
+  today: string
+): WordMasteryCounts {
+  const counts: WordMasteryCounts = { untouched: 0, mastered: 0, due: 0, learning: 0 };
+  for (const id of ids) {
+    const state = progress[id];
+    if (!state) counts.untouched++;
+    else if (state.interval >= 21) counts.mastered++;
+    else if (state.due <= today) counts.due++;
+    else counts.learning++;
+  }
+  return counts;
+}
+
 export function addDays(day: string, n: number): string {
   const [y, m, d] = day.split('-').map(Number);
   // タイムゾーンずれを避けるため UTC 正午で計算

@@ -48,10 +48,10 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="guide">
-        <NativeTabs.Trigger.Label>ガイド</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="mypage">
+        <NativeTabs.Trigger.Label>マイページ</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf="book.fill"
+          sf="person.crop.circle.fill"
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />

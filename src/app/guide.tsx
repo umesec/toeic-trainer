@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -15,6 +15,11 @@ export default function GuideScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <Pressable
+            onPress={() => router.push('/mypage' as never)}
+            style={({ pressed }) => pressed && styles.pressed}>
+            <ThemedText type="linkPrimary">← マイページに戻る</ThemedText>
+          </Pressable>
           <ThemedText type="subtitle">TOEIC ガイド</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             はじめてTOEICを受ける人向けに、試験の全体像と各Partの形式・攻略ポイントをまとめました。
@@ -71,6 +76,9 @@ const styles = StyleSheet.create({
     paddingTop: TopContentInset,
     paddingBottom: BottomTabInset + Spacing.four,
     gap: Spacing.three,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   header: {
     marginTop: Spacing.two,

@@ -50,7 +50,8 @@ export type FeatureKey =
   | 'reading'
   | 'mock'
   | 'mistakes'
-  | 'guide';
+  | 'guide'
+  | 'settings';
 
 export interface FeatureColor {
   main: string;
@@ -67,6 +68,7 @@ export const FeatureColors: Record<'light' | 'dark', Record<FeatureKey, FeatureC
     mock: { main: '#3C87F7', tint: '#E9F1FF', onTint: '#2568D0' },
     mistakes: { main: '#F43F5E', tint: '#FFEBEF', onTint: '#D02648' },
     guide: { main: '#6366F1', tint: '#ECEDFF', onTint: '#4649D6' },
+    settings: { main: '#64748B', tint: '#EEF1F4', onTint: '#475569' },
   },
   dark: {
     words: { main: '#A78BFA', tint: '#291F42', onTint: '#C4B0FF' },
@@ -76,6 +78,7 @@ export const FeatureColors: Record<'light' | 'dark', Record<FeatureKey, FeatureC
     mock: { main: '#5C9DFF', tint: '#152841', onTint: '#8FBCFF' },
     mistakes: { main: '#FB7185', tint: '#3B1B22', onTint: '#FF9EAC' },
     guide: { main: '#818CF8', tint: '#202247', onTint: '#AEB5FF' },
+    settings: { main: '#94A3B8', tint: '#1E2530', onTint: '#CBD5E1' },
   },
 };
 

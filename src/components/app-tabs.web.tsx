@@ -32,9 +32,16 @@ export default function AppTabs() {
           <TabTrigger name="listening" href="/listening" asChild>
             <TabButton>リスニング</TabButton>
           </TabTrigger>
-          <TabTrigger name="guide" href="/guide" asChild>
-            <TabButton>ガイド</TabButton>
+          <TabTrigger name="mypage" href="/mypage" asChild>
+            <TabButton>マイページ</TabButton>
           </TabTrigger>
+          {/*
+            expo-router/ui の Tabs は TabList に登録されていないルートへは
+            router.push() で遷移できない（TabSlot が現在のタブの中身を保持し続ける）ため、
+            タブバーには出さないが遷移だけ可能にしたい画面は非表示の TabTrigger として登録する。
+          */}
+          <TabTrigger name="guide" href="/guide" style={styles.hidden} />
+          <TabTrigger name="stats" href="/stats" style={styles.hidden} />
         </CustomTabList>
       </TabList>
     </Tabs>
@@ -103,5 +110,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
+  },
+  hidden: {
+    display: 'none',
   },
 });
