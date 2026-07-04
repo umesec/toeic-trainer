@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ACHIEVEMENTS } from '@/lib/achievements';
 import { ProgressBar } from '@/components/progress-bar';
 import { SettingsModal } from '@/components/settings-modal';
 import { StatsContent } from '@/components/stats-content';
@@ -12,8 +13,17 @@ import { AppButton, Card } from '@/components/ui';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } from '@/constants/theme';
 import { useShadows, useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
-import { classifyWordCounts, todayStr, type WordMasteryCounts } from '@/lib/srs';
-import { loadCustomWords, loadMistakes, loadPaceStats, loadProgress } from '@/lib/storage';
+import { addDays, classifyWordCounts, todayStr, type WordMasteryCounts } from '@/lib/srs';
+import {
+  loadAchievementMap,
+  loadCustomWords,
+  loadDailyLogMap,
+  loadMistakes,
+  loadPaceStats,
+  loadProgress,
+  loadStreak,
+  type AchievementMap,
+} from '@/lib/storage';
 
 export default function MyPageScreen() {
   const router = useRouter();
@@ -33,14 +43,31 @@ export default function MyPageScreen() {
   const [part5PaceSec, setPart5PaceSec] = useState<number | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [unlocked, setUnlocked] = useState<AchievementMap>({});
+  const [streakCount, setStreakCount] = useState(0);
+  const [calendar, setCalendar] = useState<{ date: string; count: number }[]>([]);
 
   const reload = useCallback(async () => {
-    const [progress, customWords, mistakes, paceStats] = await Promise.all([
-      loadProgress(),
-      loadCustomWords(),
-      loadMistakes(),
-      loadPaceStats(),
-    ]);
+    const [progress, customWords, mistakes, paceStats, achievementMap, streak, logMap] =
+      await Promise.all([
+        loadProgress(),
+        loadCustomWords(),
+        loadMistakes(),
+        loadPaceStats(),
+        loadAchievementMap(),
+        loadStreak(),
+        loadDailyLogMap(),
+      ]);
+    setUnlocked(achievementMap);
+    setStreakCount(streak.count);
+    // 直近35日の学習カレンダー（古い日→今日）
+    const days: { date: string; count: number }[] = [];
+    for (let i = 34; i >= 0; i--) {
+      const date = addDays(today, -i);
+      const d = logMap[date];
+      days.push({ date, count: d ? d.cards + d.quiz + d.listening + (d.reading ?? 0) : 0 });
+    }
+    setCalendar(days);
     const ids = [...WORDS.map((w) => w.id), ...customWords.map((c) => c.id)];
     setCounts(classifyWordCounts(ids, progress, today));
     setCustomWordCount(customWords.length);
@@ -119,6 +146,59 @@ export default function MyPageScreen() {
                 onPress={() => router.push('/flashcards' as never)}
               />
             )}
+          </Card>
+
+          <Card>
+            <View style={styles.calendarHeader}>
+              <ThemedText type="smallBold">📆 学習カレンダー（直近35日）</ThemedText>
+              <ThemedText type="smallBold" style={{ color: theme.warning }}>
+                🔥 {streakCount}日連続
+              </ThemedText>
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendar.map((d) => {
+                const bg =
+                  d.count === 0
+                    ? theme.backgroundSelected
+                    : d.count < 10
+                      ? `${theme.accent}55`
+                      : d.count < 25
+                        ? `${theme.accent}AA`
+                        : theme.accent;
+                return <View key={d.date} style={[styles.calendarCell, { backgroundColor: bg }]} />;
+              })}
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              マスを毎日塗りつぶして、学習の連続記録を伸ばしましょう
+            </ThemedText>
+          </Card>
+
+          <Card>
+            <ThemedText type="smallBold">
+              🏆 実績 {Object.keys(unlocked).length} / {ACHIEVEMENTS.length}
+            </ThemedText>
+            <View style={styles.badgeGrid}>
+              {ACHIEVEMENTS.map((a) => {
+                const isUnlocked = !!unlocked[a.id];
+                return (
+                  <View
+                    key={a.id}
+                    style={[styles.badge, !isUnlocked && styles.badgeLocked]}>
+                    <ThemedText style={styles.badgeEmoji}>{isUnlocked ? a.emoji : '🔒'}</ThemedText>
+                    <ThemedText type="small" style={styles.badgeTitle} numberOfLines={1}>
+                      {a.title}
+                    </ThemedText>
+                    <ThemedText
+                      type="small"
+                      themeColor="textSecondary"
+                      style={styles.badgeDesc}
+                      numberOfLines={2}>
+                      {isUnlocked ? `${unlocked[a.id]} 達成` : a.desc}
+                    </ThemedText>
+                  </View>
+                );
+              })}
+            </View>
           </Card>
 
           <ThemedText type="smallBold" style={styles.sectionTitle}>
@@ -241,6 +321,50 @@ const styles = StyleSheet.create({
   },
   masteryStat: {
     gap: Spacing.half,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.one,
+  },
+  calendarCell: {
+    width: '12.2%',
+    aspectRatio: 1.6,
+    borderRadius: 4,
+  },
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  badge: {
+    flexBasis: '30%',
+    flexGrow: 1,
+    alignItems: 'center',
+    gap: Spacing.half,
+    paddingVertical: Spacing.two,
+  },
+  badgeLocked: {
+    opacity: 0.4,
+  },
+  badgeEmoji: {
+    fontSize: 26,
+    lineHeight: 32,
+  },
+  badgeTitle: {
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  badgeDesc: {
+    fontSize: 10,
+    lineHeight: 13,
+    textAlign: 'center',
   },
   pressed: {
     opacity: 0.6,

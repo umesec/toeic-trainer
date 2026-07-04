@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarChart, type BarDatum } from '@/components/bar-chart';
+import { CelebrationOverlay } from '@/components/celebration-overlay';
 import { FeatureTile } from '@/components/feature-tile';
 import { HeroCard } from '@/components/hero-card';
 import { ProgressBar } from '@/components/progress-bar';
@@ -30,6 +31,8 @@ import {
   feasibilityOf,
   type StudyPlan,
 } from '@/lib/plan';
+import { ACHIEVEMENTS } from '@/lib/achievements';
+import { cheerOfTheDay, greetingForHour, syncAchievements } from '@/lib/engagement';
 import { syncReminders } from '@/lib/reminders';
 import { addDays, isDue, todayStr } from '@/lib/srs';
 import {
@@ -38,7 +41,10 @@ import {
   loadDailyLogMap,
   loadDayLog,
   loadDiagnosisResult,
+  loadMenuCelebratedDay,
   loadMistakes,
+  loadPendingAchievements,
+  savePendingAchievements,
   loadMockHistory,
   loadOnboardingDone,
   loadPlan,
@@ -46,6 +52,7 @@ import {
   loadQuizStats,
   loadSettings,
   loadStreak,
+  saveMenuCelebratedDay,
   savePlan,
   type DayLog,
   type DiagnosisResult,
@@ -93,6 +100,8 @@ export default function HomeScreen() {
   const [scoreChart, setScoreChart] = useState<BarDatum[]>([]);
   const [mistakeCount, setMistakeCount] = useState(0);
   const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null | undefined>(undefined);
+  const [greeting, setGreeting] = useState('こんにちは 👋');
+  const [celebration, setCelebration] = useState<{ kind: 'achievement' | 'menu'; title: string; message?: string } | null>(null);
 
   // 初回起動時のみオンボーディングへリダイレクト
   useEffect(() => {
@@ -150,6 +159,38 @@ export default function HomeScreen() {
         .slice(-10)
         .map((h) => ({ label: h.date.slice(5).replace('-', '/'), value: h.estimatedTotal! }))
     );
+
+    setGreeting(greetingForHour(new Date().getHours()));
+
+    // 実績の新規解除チェック → お祝い（表示待ちキューはユーザーが閉じるまで残る）。
+    // なければ今日のメニュー完遂のお祝い（1日1回）
+    await syncAchievements(today);
+    const pending = await loadPendingAchievements();
+    if (pending.length > 0) {
+      const defs = ACHIEVEMENTS.filter((a) => pending.includes(a.id));
+      setCelebration({
+        kind: 'achievement',
+        title: `🏆 実績解除！ ${defs[0].emoji} ${defs[0].title}`,
+        message:
+          defs.length > 1
+            ? `ほか ${defs.length - 1} 件も同時に解除！マイページで確認できます`
+            : defs[0].desc,
+      });
+    } else if (p) {
+      const quota = dailyQuota(p, today);
+      const menuDone =
+        log.cards >= quota.cards &&
+        log.quiz >= quota.quiz &&
+        log.listening >= quota.listening &&
+        log.reading >= quota.reading;
+      if (menuDone && (await loadMenuCelebratedDay()) !== today) {
+        setCelebration({
+          kind: 'menu',
+          title: '🎉 今日のメニュー完遂！',
+          message: '素晴らしい継続です。明日もこの調子でいきましょう！',
+        });
+      }
+    }
   }, [today]);
 
   // タブに戻ってくるたびに最新の進捗を反映
@@ -177,9 +218,12 @@ export default function HomeScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.titleRow}>
             <ThemedText type="small" themeColor="textSecondary">
-              こんにちは 👋
+              {greeting}
             </ThemedText>
             <ThemedText type="subtitle">TOEIC トレーナー</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {cheerOfTheDay(today)}
+            </ThemedText>
           </View>
 
           {/* 診断テスト CTA（未受診時のみ） */}
@@ -313,6 +357,18 @@ export default function HomeScreen() {
           </Card>
         </ScrollView>
       </SafeAreaView>
+
+      <CelebrationOverlay
+        visible={celebration !== null}
+        title={celebration?.title ?? ''}
+        message={celebration?.message}
+        onClose={() => {
+          // 「閉じた」時点で消費扱いにする（二重マウントでも取りこぼさない）
+          if (celebration?.kind === 'achievement') savePendingAchievements([]);
+          if (celebration?.kind === 'menu') saveMenuCelebratedDay(today);
+          setCelebration(null);
+        }}
+      />
 
       <PlanModal
         // プラン読込・変更時に再マウントして useState の初期値へ反映させる

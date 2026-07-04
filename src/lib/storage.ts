@@ -22,6 +22,9 @@ const KEYS = {
   mistakeSrs: 'mistake.srs.v1',
   diagnosisResult: 'diagnosis.result.v1',
   onboardingDone: 'onboarding.done.v1',
+  achievements: 'achievements.v1',
+  achievementsPending: 'achievements.pending.v1',
+  menuCelebrated: 'celebration.menu.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {
@@ -376,3 +379,23 @@ export const saveDiagnosisResult = (r: DiagnosisResult) => setJSON(KEYS.diagnosi
 
 export const loadOnboardingDone = () => getJSON<boolean>(KEYS.onboardingDone, false);
 export const saveOnboardingDone = () => setJSON(KEYS.onboardingDone, true);
+
+/* ---------- 実績・お祝い演出 ---------- */
+
+/** 解除済み実績: 実績ID → 解除日(YYYY-MM-DD) */
+export type AchievementMap = Record<string, string>;
+
+export const loadAchievementMap = () => getJSON<AchievementMap>(KEYS.achievements, {});
+export const saveAchievementMap = (m: AchievementMap) => setJSON(KEYS.achievements, m);
+
+/**
+ * まだお祝い演出を表示していない解除済み実績ID。
+ * 表示時ではなく「ユーザーが閉じた時」にクリアすることで、
+ * 開発モードの二重マウントや画面遷移をまたいでも取りこぼさない。
+ */
+export const loadPendingAchievements = () => getJSON<string[]>(KEYS.achievementsPending, []);
+export const savePendingAchievements = (ids: string[]) => setJSON(KEYS.achievementsPending, ids);
+
+/** 今日のメニュー完遂のお祝いを表示済みの日付（1日1回だけ祝う） */
+export const loadMenuCelebratedDay = () => getJSON<string>(KEYS.menuCelebrated, '');
+export const saveMenuCelebratedDay = (day: string) => setJSON(KEYS.menuCelebrated, day);
