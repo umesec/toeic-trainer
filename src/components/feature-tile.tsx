@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radius, Spacing, type FeatureKey } from '@/constants/theme';
@@ -7,7 +8,7 @@ import { useFeatureColors, useShadows } from '@/hooks/use-theme';
 
 /** ホームのクイックスタート用: 色分けアイコンバッジ付きタイル */
 export function FeatureTile({
-  emoji,
+  icon,
   title,
   subtitle,
   feature,
@@ -15,7 +16,7 @@ export function FeatureTile({
   badge,
   style,
 }: {
-  emoji: string;
+  icon: IconName;
   title: string;
   subtitle?: string;
   feature: FeatureKey;
@@ -34,7 +35,7 @@ export function FeatureTile({
       <ThemedView type="backgroundElement" style={[styles.tile, shadows.card]}>
         <View style={styles.topRow}>
           <View style={[styles.iconBadge, { backgroundColor: colors.tint }]}>
-            <ThemedText style={styles.emoji}>{emoji}</ThemedText>
+            <Icon name={icon} size={24} color={colors.main} />
           </View>
           {badge !== undefined && badge !== 0 && (
             <View style={[styles.badge, { backgroundColor: colors.main }]}>

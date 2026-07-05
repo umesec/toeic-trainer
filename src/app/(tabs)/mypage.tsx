@@ -4,6 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ACHIEVEMENTS } from '@/lib/achievements';
+import { Icon, type IconName } from '@/components/icon';
 import { ProgressBar } from '@/components/progress-bar';
 import { SettingsModal } from '@/components/settings-modal';
 import { StatsContent } from '@/components/stats-content';
@@ -120,10 +121,10 @@ export default function MyPageScreen() {
             <ThemedText type="smallBold">📚 単語の定着状況</ThemedText>
             <ProgressBar value={counts.mastered} max={Math.max(totalWords, 1)} height={8} />
             <View style={styles.masteryRow}>
-              <MasteryStat emoji="✅" label="定着" value={counts.mastered} />
-              <MasteryStat emoji="🕒" label="復習待ち" value={counts.due} />
-              <MasteryStat emoji="✏️" label="学習中" value={counts.learning} />
-              <MasteryStat emoji="⬜" label="未着手" value={counts.untouched} />
+              <MasteryStat icon="check-circle" color={theme.success} label="定着" value={counts.mastered} />
+              <MasteryStat icon="clock" color={theme.warning} label="復習待ち" value={counts.due} />
+              <MasteryStat icon="pencil-write" color={theme.accent} label="学習中" value={counts.learning} />
+              <MasteryStat icon="square-outline" color={theme.textSecondary} label="未着手" value={counts.untouched} />
             </View>
             <ThemedText type="small" themeColor="textSecondary">
               自作単語 {customWordCount} 語を含む 全 {totalWords} 語
@@ -213,13 +214,13 @@ export default function MyPageScreen() {
         <Pressable style={styles.menuBackdrop} onPress={() => setShowMenu(false)}>
           <View style={styles.menuAnchor} pointerEvents="box-none">
             <ThemedView type="backgroundElement" style={[styles.menuPanel, shadows.card]}>
-              <MenuItem emoji="📖" label="ガイド" onPress={() => openMenuItem('guide')} />
+              <MenuItem icon="book-open" label="ガイド" onPress={() => openMenuItem('guide')} />
               <MenuItem
-                emoji="📓"
+                icon="notebook-flag"
                 label={mistakeCount > 0 ? `間違いノート（${mistakeCount}）` : '間違いノート'}
                 onPress={() => openMenuItem('mistakes')}
               />
-              <MenuItem emoji="⚙️" label="設定・バックアップ" onPress={() => openMenuItem('settings')} />
+              <MenuItem icon="gear" label="設定・バックアップ" onPress={() => openMenuItem('settings')} />
             </ThemedView>
           </View>
         </Pressable>
@@ -234,21 +235,33 @@ export default function MyPageScreen() {
   );
 }
 
-function MenuItem({ emoji, label, onPress }: { emoji: string; label: string; onPress: () => void }) {
+function MenuItem({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  const theme = useTheme();
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}>
-      <ThemedText type="default">{emoji}</ThemedText>
+      <Icon name={icon} size={18} color={theme.text} />
       <ThemedText type="smallBold">{label}</ThemedText>
     </Pressable>
   );
 }
 
-function MasteryStat({ emoji, label, value }: { emoji: string; label: string; value: number }) {
+function MasteryStat({
+  icon,
+  color,
+  label,
+  value,
+}: {
+  icon: IconName;
+  color: string;
+  label: string;
+  value: number;
+}) {
   return (
     <View style={styles.masteryStat}>
-      <ThemedText type="smallBold">
-        {emoji} {value}
-      </ThemedText>
+      <View style={styles.masteryRow2}>
+        <Icon name={icon} size={16} color={color} />
+        <ThemedText type="smallBold">{value}</ThemedText>
+      </View>
       <ThemedText type="small" themeColor="textSecondary">
         {label}
       </ThemedText>
@@ -321,6 +334,11 @@ const styles = StyleSheet.create({
   },
   masteryStat: {
     gap: Spacing.half,
+  },
+  masteryRow2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   calendarHeader: {
     flexDirection: 'row',

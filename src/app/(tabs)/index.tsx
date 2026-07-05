@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BarChart, type BarDatum } from '@/components/bar-chart';
 import { CelebrationOverlay } from '@/components/celebration-overlay';
+import { Icon, type IconName } from '@/components/icon';
 import { FeatureTile } from '@/components/feature-tile';
 import { HeroCard } from '@/components/hero-card';
 import { ProgressBar } from '@/components/progress-bar';
@@ -60,29 +61,29 @@ import {
 } from '@/lib/storage';
 
 const FEATURES: {
-  emoji: string;
+  icon: IconName;
   title: string;
   subtitle?: string;
   feature: FeatureKey;
   href: string;
 }[] = [
   // 基礎: 実力把握 → 語彙
-  { emoji: '🩺', title: '診断テスト', subtitle: '実力把握・スタート地点を確認', feature: 'quiz', href: '/quiz/diagnosis' },
-  { emoji: '📚', title: '単語カード', subtitle: 'SRSで効率よく暗記', feature: 'words', href: '/flashcards' },
-  { emoji: '🔤', title: '単語テスト', subtitle: '4択で腕試し', feature: 'words', href: '/flashcards/test' },
+  { icon: 'stethoscope', title: '診断テスト', subtitle: '実力把握・スタート地点を確認', feature: 'quiz', href: '/quiz/diagnosis' },
+  { icon: 'book-closed', title: '単語カード', subtitle: 'SRSで効率よく暗記', feature: 'words', href: '/flashcards' },
+  { icon: 'abc', title: '単語テスト', subtitle: '4択で腕試し', feature: 'words', href: '/flashcards/test' },
   // リスニング: 耳の基礎訓練 → Part 1〜4 を本番の順に
-  { emoji: '🎧', title: '音声変化', subtitle: '聞き取れる耳を作る', feature: 'listening', href: '/listening' },
-  { emoji: '✍️', title: 'ディクテーション', subtitle: '書き取りで定着', feature: 'listening', href: '/listening/dictation' },
-  { emoji: '🖼️', title: 'Part 1 写真描写', subtitle: '場面に合う文を選ぶ', feature: 'listening', href: '/listening/part1' },
-  { emoji: '🎙️', title: 'Part 2 応答', subtitle: '音声のみで挑戦', feature: 'listening', href: '/listening/part2' },
-  { emoji: '🗣️', title: 'Part 3/4 会話・トーク', subtitle: '長文リスニング', feature: 'listening', href: '/listening/part34' },
+  { icon: 'headphones', title: '音声変化', subtitle: '聞き取れる耳を作る', feature: 'listening', href: '/listening' },
+  { icon: 'pencil-write', title: 'ディクテーション', subtitle: '書き取りで定着', feature: 'listening', href: '/listening/dictation' },
+  { icon: 'photo', title: 'Part 1 写真描写', subtitle: '場面に合う文を選ぶ', feature: 'listening', href: '/listening/part1' },
+  { icon: 'mic', title: 'Part 2 応答', subtitle: '音声のみで挑戦', feature: 'listening', href: '/listening/part2' },
+  { icon: 'chat-bubbles', title: 'Part 3/4 会話・トーク', subtitle: '長文リスニング', feature: 'listening', href: '/listening/part34' },
   // リーディング: Part 5 → 6/7 を本番の順に
-  { emoji: '📝', title: 'Part 5 クイズ', subtitle: '文法・語彙の4択', feature: 'quiz', href: '/quiz' },
-  { emoji: '📰', title: 'Part 6/7 読解', subtitle: '長文問題', feature: 'reading', href: '/quiz/part7' },
+  { icon: 'pencil-check', title: 'Part 5 クイズ', subtitle: '文法・語彙の4択', feature: 'quiz', href: '/quiz' },
+  { icon: 'newspaper', title: 'Part 6/7 読解', subtitle: '長文問題', feature: 'reading', href: '/quiz/part7' },
   // 仕上げ: 模試 → 振り返り
-  { emoji: '📈', title: '模試・実力測定', subtitle: '推定スコアを測る', feature: 'mock', href: '/quiz/mock' },
-  { emoji: '📓', title: '間違いノート', subtitle: '解き直しで克服', feature: 'mistakes', href: '/quiz/mistakes' },
-  { emoji: '📊', title: '学習分析', subtitle: 'Part別正答率・スコア推移', feature: 'quiz', href: '/stats' },
+  { icon: 'chart-up', title: '模試・実力測定', subtitle: '推定スコアを測る', feature: 'mock', href: '/quiz/mock' },
+  { icon: 'notebook-flag', title: '間違いノート', subtitle: '解き直しで克服', feature: 'mistakes', href: '/quiz/mistakes' },
+  { icon: 'bar-chart', title: '学習分析', subtitle: 'Part別正答率・スコア推移', feature: 'quiz', href: '/stats' },
 ];
 
 export default function HomeScreen() {
@@ -284,9 +285,10 @@ export default function HomeScreen() {
 
           {/* 進捗サマリー */}
           <View style={styles.statsRow}>
-            <StatCard emoji="🔥" label="連続学習" value={`${streakCount}日`} />
+            <StatCard icon="flame" color={theme.warning} label="連続学習" value={`${streakCount}日`} />
             <StatCard
-              emoji="✅"
+              icon="check-circle"
+              color={theme.success}
               label="正答率"
               value={
                 quizStats.answered > 0
@@ -295,7 +297,8 @@ export default function HomeScreen() {
               }
             />
             <StatCard
-              emoji="📚"
+              icon="book-closed"
+              color={theme.accent}
               label="復習待ち"
               value={`${dueCount}枚`}
               onPress={() => router.push('/flashcards' as never)}
@@ -310,7 +313,7 @@ export default function HomeScreen() {
             {FEATURES.map((f) => (
               <FeatureTile
                 key={f.href + f.title}
-                emoji={f.emoji}
+                icon={f.icon}
                 title={f.title}
                 subtitle={f.subtitle}
                 feature={f.feature}
@@ -541,19 +544,21 @@ function MenuRow({
 }
 
 function StatCard({
-  emoji,
+  icon,
+  color,
   label,
   value,
   onPress,
 }: {
-  emoji: string;
+  icon: IconName;
+  color: string;
   label: string;
   value: string;
   onPress?: () => void;
 }) {
   const body = (
     <Card style={styles.statCard}>
-      <ThemedText style={styles.statEmoji}>{emoji}</ThemedText>
+      <Icon name={icon} size={22} color={color} />
       <ThemedText type="smallBold" style={styles.statValue}>
         {value}
       </ThemedText>

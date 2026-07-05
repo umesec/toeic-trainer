@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Chip } from '@/components/ui';
@@ -115,7 +116,10 @@ export function SettingsModal({
       <View style={styles.backdrop}>
         <ThemedView style={styles.body}>
           <ScrollView contentContainerStyle={styles.scroll}>
-            <ThemedText type="subtitle">⚙️ 設定</ThemedText>
+            <View style={styles.titleRow}>
+              <Icon name="gear" size={22} color={theme.text} />
+              <ThemedText type="subtitle">設定</ThemedText>
+            </View>
 
             <ThemedText type="smallBold">読み上げ速度</ThemedText>
             <View style={styles.chipRow}>
@@ -253,6 +257,11 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.two,
   },
   sectionTitle: {
