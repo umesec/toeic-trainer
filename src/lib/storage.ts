@@ -195,6 +195,16 @@ export async function bumpDaily(today: string, field: keyof DayLog, n = 1): Prom
   return day;
 }
 
+/**
+ * 学習アクション記録の定型セット（日次ログ加算 + 連続学習日数の更新）。
+ * ほぼ全ての学習画面で `bumpDaily` と `recordStudy` はこの2点セットで呼ばれるため、
+ * 呼び出し側の重複を避けるためにまとめたショートハンド。
+ */
+export async function bumpStudy(field: keyof DayLog, today: string, n = 1): Promise<void> {
+  await bumpDaily(today, field, n);
+  await recordStudy(today);
+}
+
 /** 統計グラフ用に全日分のログを返す */
 export const loadDailyLogMap = () => getJSON<DailyLogMap>(KEYS.dailyLog, {});
 

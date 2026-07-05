@@ -5,27 +5,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { LISTENING_SETS } from '@/data/part34';
 import type { ListeningSet } from '@/data/types';
 import { pitchForSpeaker, speak, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordStudy } from '@/lib/storage';
+import { bumpStudy } from '@/lib/storage';
 
 export default function ShadowingScreen() {
   const [current, setCurrent] = useState<ListeningSet | null>(null);
 
   const handleSelect = (set: ListeningSet) => {
     const today = todayStr();
-    bumpDaily(today, 'listening');
-    recordStudy(today);
+    bumpStudy('listening', today);
     setCurrent(set);
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
         {current ? (
           <ShadowingSession
             set={current}
@@ -35,7 +35,7 @@ export default function ShadowingScreen() {
             }}
           />
         ) : (
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
             <ThemedText type="subtitle">シャドーイング練習</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               Part 3/4 のスクリプトを1行ずつ再生します。聞いた直後に声に出してシャドーイングし、テキストで確認しましょう。スロー再生でリズムを体感する練習にも使えます。
@@ -44,7 +44,7 @@ export default function ShadowingScreen() {
               <Pressable
                 key={set.id}
                 onPress={() => handleSelect(set)}
-                style={({ pressed }) => pressed && styles.pressed}>
+                style={({ pressed }) => pressed && screenStyles.pressed}>
                 <Card>
                   <View style={styles.cardHeader}>
                     <ThemedText type="smallBold">
@@ -96,7 +96,7 @@ function ShadowingSession({ set, onBack }: { set: ListeningSet; onBack: () => vo
 
   if (done) {
     return (
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
         <Card style={styles.centeredCard}>
           <ThemedText type="subtitle">完了！</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
@@ -126,8 +126,8 @@ function ShadowingSession({ set, onBack }: { set: ListeningSet; onBack: () => vo
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-      <Pressable onPress={onBack} style={({ pressed }) => pressed && styles.pressed}>
+    <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+      <Pressable onPress={onBack} style={({ pressed }) => pressed && screenStyles.pressed}>
         <ThemedText type="linkPrimary">← セット一覧に戻る</ThemedText>
       </Pressable>
 
@@ -182,24 +182,6 @@ function ShadowingSession({ set, onBack }: { set: ListeningSet; onBack: () => vo
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

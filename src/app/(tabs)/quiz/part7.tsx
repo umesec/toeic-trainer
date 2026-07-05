@@ -7,7 +7,8 @@ import { PassagePractice, SetListCard } from '@/components/passage-practice';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Chip } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { PART7_SETS } from '@/data/part7';
 import type { Part7Set } from '@/data/types';
 import { setQuestionId } from '@/lib/mistakes';
@@ -40,12 +41,12 @@ export default function Part7Screen() {
   });
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           <Pressable
             onPress={() => (current ? setCurrent(null) : router.back())}
-            style={({ pressed }) => pressed && styles.pressed}>
+            style={({ pressed }) => pressed && screenStyles.pressed}>
             <ThemedText type="linkPrimary">{current ? '← 文書一覧に戻る' : '← クイズに戻る'}</ThemedText>
           </Pressable>
           <ThemedText type="subtitle">Part 7 長文読解</ThemedText>
@@ -102,27 +103,9 @@ export default function Part7Screen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

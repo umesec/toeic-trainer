@@ -1,29 +1,23 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import {
-  BottomTabInset,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  TopContentInset,
-} from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { PART1_ITEMS } from '@/data/part1';
 import { accentForId, speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
+import { bumpStudy, recordMistake } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
 const LABELS = ['A', 'B', 'C', 'D'] as const;
 
 export default function Part1Screen() {
-  const router = useRouter();
   const theme = useTheme();
   const [order, setOrder] = useState(() => shuffle(PART1_ITEMS));
   const [index, setIndex] = useState(0);
@@ -49,8 +43,7 @@ export default function Part1Screen() {
     if (i === item.answer) setScore((s) => s + 1);
     const today = todayStr();
     if (i !== item.answer) recordMistake('part1', item.id, today);
-    bumpDaily(today, 'listening');
-    recordStudy(today);
+    bumpStudy('listening', today);
   };
 
   const next = () => {
@@ -67,12 +60,10 @@ export default function Part1Screen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← リスニングの一覧に戻る</ThemedText>
-          </Pressable>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <BackLink label="← リスニングの一覧に戻る" fallbackHref="/listening" />
 
           <ThemedText type="subtitle">Part 1 写真描写</ThemedText>
 
@@ -118,7 +109,7 @@ export default function Part1Screen() {
                     styles.choiceMark,
                     showCorrect && { borderColor: theme.success },
                     showWrong && { borderColor: theme.danger },
-                    pressed && !done && styles.pressed,
+                    pressed && !done && screenStyles.pressed,
                   ]}>
                   <ThemedView
                     type="backgroundElement"
@@ -163,21 +154,6 @@ export default function Part1Screen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   sceneCard: {
     alignItems: 'center',
     gap: Spacing.two,
@@ -204,9 +180,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two + 2,
     paddingHorizontal: Spacing.three,
     gap: Spacing.half,
-  },
-  pressed: {
-    opacity: 0.6,
   },
   doneCard: {
     alignItems: 'center',

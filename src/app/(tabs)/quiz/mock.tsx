@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { PART1_ITEMS } from '@/data/part1';
 import { PART2_ITEMS } from '@/data/part2';
 import { LISTENING_SETS } from '@/data/part34';
@@ -22,9 +24,9 @@ import { todayStr } from '@/lib/srs';
 import {
   addMockResult,
   bumpDaily,
+  bumpStudy,
   loadMockHistory,
   recordMistake,
-  recordStudy,
   recordTagAnswer,
   type MockResult,
 } from '@/lib/storage';
@@ -131,7 +133,6 @@ function samplePart7(c: ModeConfig): Part7Set[] {
 }
 
 export default function MockTestScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const features = useFeatureColors();
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
@@ -298,8 +299,7 @@ export default function MockTestScreen() {
     await bumpDaily(today, 'listening', listeningTotal);
     await bumpDaily(today, 'quiz', plan.part5.length);
     // 読解は「今日のメニュー」に合わせてセット数でカウント
-    await bumpDaily(today, 'reading', plan.part6.length + plan.part7.length);
-    await recordStudy(today);
+    await bumpStudy('reading', today, plan.part6.length + plan.part7.length);
     const estimated =
       plan.mode === 'full' || plan.mode === 'half' || plan.mode === 'exam'
         ? estimateScore(listening, listeningTotal, reading, readingTotal)
@@ -321,14 +321,12 @@ export default function MockTestScreen() {
   const a = answersRef.current;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView ref={scrollRef} contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           {phase === 'intro' && (
             <>
-              <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary">← 戻る</ThemedText>
-              </Pressable>
+              <BackLink label="← 戻る" fallbackHref="/quiz" />
               <ThemedText type="subtitle">模試</ThemedText>
 
               <Card>
@@ -576,7 +574,7 @@ function countCorrect(plan: TestPlan, a: Answers) {
 
 function ChoiceButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => pressed && styles.pressed}>
+    <Pressable onPress={onPress} style={({ pressed }) => pressed && screenStyles.pressed}>
       <ThemedView type="backgroundElement" style={styles.choiceInner}>
         <ThemedText type="default">{label}</ThemedText>
       </ThemedView>
@@ -674,7 +672,7 @@ function SetSection({
             <Pressable
               key={choice}
               onPress={() => onPick(qi, ci)}
-              style={({ pressed }) => [pressed && styles.pressed]}>
+              style={({ pressed }) => [pressed && screenStyles.pressed]}>
               <ThemedView
                 type={picked[qi] === ci ? 'backgroundSelected' : 'backgroundElement'}
                 style={[styles.choiceInner, picked[qi] === ci && [styles.choiceSelected, { borderColor: theme.accent }]]}>
@@ -981,21 +979,6 @@ const mockChartStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1044,8 +1027,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
     marginTop: Spacing.two,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

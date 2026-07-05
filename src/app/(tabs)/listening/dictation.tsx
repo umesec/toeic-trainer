@@ -1,21 +1,21 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { DICTATION_ITEMS, SOUND_CHANGE_RULES } from '@/data/soundChanges';
 import { accentForId, speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordStudy } from '@/lib/storage';
+import { bumpStudy } from '@/lib/storage';
 import { normalizeSentence, shuffle, splitByFocus } from '@/lib/util';
 
 export default function DictationScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const [order, setOrder] = useState(() => shuffle(DICTATION_ITEMS));
   const [index, setIndex] = useState(0);
@@ -33,8 +33,7 @@ export default function DictationScreen() {
     setChecked(true);
     if (correct) setCorrectCount((n) => n + 1);
     const today = todayStr();
-    bumpDaily(today, 'listening');
-    recordStudy(today);
+    bumpStudy('listening', today);
   };
 
   const next = () => {
@@ -52,12 +51,10 @@ export default function DictationScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← リスニングの一覧に戻る</ThemedText>
-          </Pressable>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <BackLink label="← リスニングの一覧に戻る" fallbackHref="/listening" />
 
           <ThemedText type="subtitle">ディクテーション</ThemedText>
 
@@ -138,21 +135,6 @@ export default function DictationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   playRow: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -170,9 +152,6 @@ const styles = StyleSheet.create({
   focus: {
     fontWeight: '700',
     textDecorationLine: 'underline',
-  },
-  pressed: {
-    opacity: 0.6,
   },
   doneCard: {
     alignItems: 'center',

@@ -16,16 +16,16 @@ import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
+import { screenStyles } from '@/constants/screen-styles';
 import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
 import { isDue, newCardState, review, todayStr, type Grade } from '@/lib/srs';
 import {
-  bumpDaily,
+  bumpStudy,
   loadCustomWords,
   loadProgress,
-  recordStudy,
   saveCustomWords,
   saveProgress,
   type CustomWord,
@@ -96,8 +96,7 @@ export default function FlashcardsScreen() {
     const updated = { ...progress, [current.id]: next };
     setProgress(updated);
     saveProgress(updated);
-    recordStudy(today);
-    bumpDaily(today, 'cards');
+    bumpStudy('cards', today);
     setFlipped(false);
     setDoneCount((d) => d + 1);
     // again/hard は当日中に再挑戦できるようキュー末尾へ回す
@@ -157,7 +156,7 @@ export default function FlashcardsScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={screenStyles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <ThemedText type="subtitle">単語カード</ThemedText>
@@ -369,11 +368,6 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,

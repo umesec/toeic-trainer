@@ -7,20 +7,15 @@ import { BarChart, type BarDatum } from '@/components/bar-chart';
 import { CelebrationOverlay } from '@/components/celebration-overlay';
 import { Icon, type IconName } from '@/components/icon';
 import { FeatureTile } from '@/components/feature-tile';
+import { BackLink } from '@/components/back-link';
 import { HeroCard } from '@/components/hero-card';
 import { ProgressBar } from '@/components/progress-bar';
 import { ScoreSlider } from '@/components/score-slider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
-import {
-  BottomTabInset,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  TopContentInset,
-  type FeatureKey,
-} from '@/constants/theme';
+import { Radius, Spacing, type FeatureKey } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
 import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
 import { setAccentMixEnabled, setSpeechRateScale } from '@/lib/speech';
@@ -33,6 +28,7 @@ import {
   type StudyPlan,
 } from '@/lib/plan';
 import { ACHIEVEMENTS } from '@/lib/achievements';
+import { buildDailyChart, buildScoreChart } from '@/lib/charts';
 import { cheerOfTheDay, greetingForHour, syncAchievements } from '@/lib/engagement';
 import { syncReminders } from '@/lib/reminders';
 import { addDays, isDue, todayStr } from '@/lib/srs';
@@ -141,25 +137,8 @@ export default function HomeScreen() {
     // 19時リマインド通知を最新の消化状況に同期（失敗しても画面には影響させない）
     syncReminders(settings.remindEnabled, p, log).catch(() => {});
 
-    // 直近14日の学習量
-    const days: BarDatum[] = [];
-    for (let i = 13; i >= 0; i--) {
-      const date = addDays(today, -i);
-      const d = logMap[date];
-      days.push({
-        label: date.slice(5).replace('-', '/'),
-        value: d ? d.cards + d.quiz + d.listening + (d.reading ?? 0) : 0,
-      });
-    }
-    setDailyChart(days);
-
-    // 実力測定の推定スコア推移（直近10件）
-    setScoreChart(
-      mockHistory
-        .filter((h) => h.estimatedTotal !== undefined)
-        .slice(-10)
-        .map((h) => ({ label: h.date.slice(5).replace('-', '/'), value: h.estimatedTotal! }))
-    );
+    setDailyChart(buildDailyChart(logMap, today));
+    setScoreChart(buildScoreChart(mockHistory));
 
     setGreeting(greetingForHour(new Date().getHours()));
 
@@ -214,9 +193,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.titleRow}>
             <ThemedText type="small" themeColor="textSecondary">
               {greeting}
@@ -231,7 +210,7 @@ export default function HomeScreen() {
           {diagnosis === null && (
             <Pressable
               onPress={() => router.push('/quiz/diagnosis' as never)}
-              style={({ pressed }) => [styles.diagnosisBanner, pressed && styles.dimmed]}>
+              style={({ pressed }) => [styles.diagnosisBanner, pressed && screenStyles.pressed]}>
               <View style={styles.diagnosisInner}>
                 <View style={{ flex: 1, gap: Spacing.half }}>
                   <ThemedText type="smallBold" style={styles.heroTitle}>
@@ -251,7 +230,7 @@ export default function HomeScreen() {
                 <ThemedText type="small" themeColor="textSecondary">前回の診断スコア</ThemedText>
                 <ThemedText type="smallBold">{diagnosis.estimatedTotal}点（L {diagnosis.listening} / R {diagnosis.reading}）</ThemedText>
               </View>
-              <Pressable onPress={() => router.push('/quiz/diagnosis' as never)} style={({ pressed }) => pressed && styles.dimmed}>
+              <Pressable onPress={() => router.push('/quiz/diagnosis' as never)} style={({ pressed }) => pressed && screenStyles.pressed}>
                 <ThemedText type="small" themeColor="accent">再診断 ▶</ThemedText>
               </Pressable>
             </Card>
@@ -275,7 +254,7 @@ export default function HomeScreen() {
               </ThemedText>
               <Pressable
                 onPress={() => setShowPlanModal(true)}
-                style={({ pressed }) => [styles.heroCta, pressed && styles.dimmed]}>
+                style={({ pressed }) => [styles.heroCta, pressed && screenStyles.pressed]}>
                 <ThemedText type="smallBold" style={{ color: theme.accent }}>
                   目標を設定する
                 </ThemedText>
@@ -422,7 +401,7 @@ function PlanSummary({
   return (
     <>
       {!feasibility.feasible && !feasibility.cautious && (
-        <Pressable onPress={onEdit} style={({ pressed }) => pressed && styles.dimmed}>
+        <Pressable onPress={onEdit} style={({ pressed }) => pressed && screenStyles.pressed}>
           <Card style={[styles.feasibilityCard, { borderColor: theme.danger, backgroundColor: theme.dangerBg }]}>
             <ThemedText type="smallBold" style={{ color: theme.danger }}>
               ⚠️ 目標ペースがかなりハードです（1日 {feasibility.ptsPerDay.toFixed(1)} 点必要）
@@ -473,7 +452,7 @@ function PlanSummary({
 
         <Pressable
           onPress={onEdit}
-          style={({ pressed }) => [styles.heroEditButton, pressed && styles.dimmed]}>
+          style={({ pressed }) => [styles.heroEditButton, pressed && screenStyles.pressed]}>
           <ThemedText type="smallBold" style={styles.heroTitle}>
             プランを変更
           </ThemedText>
@@ -569,7 +548,7 @@ function StatCard({
   );
   if (!onPress) return <View style={styles.statCell}>{body}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.statCell, pressed && styles.dimmed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.statCell, pressed && screenStyles.pressed]}>
       {body}
     </Pressable>
   );
@@ -754,21 +733,6 @@ function PlanModal({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   centerCard: {
     alignItems: 'center',
     gap: Spacing.two,
@@ -776,9 +740,6 @@ const styles = StyleSheet.create({
   },
   titleRow: {
     gap: Spacing.half,
-  },
-  dimmed: {
-    opacity: 0.6,
   },
   sectionTitle: {
     fontSize: 18,

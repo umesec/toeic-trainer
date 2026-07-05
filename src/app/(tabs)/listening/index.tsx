@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
 import { useFeatureColors } from '@/hooks/use-theme';
 import { SOUND_CHANGE_RULES } from '@/data/soundChanges';
 
@@ -14,9 +14,9 @@ export default function ListeningIndexScreen() {
   const features = useFeatureColors();
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           <ThemedText type="subtitle">リスニング：音声変化</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             「知っている単語なのに聞き取れない」原因の多くは、英語特有の音声変化です。各ルールを実例の音声つきで確認しましょう。
@@ -106,21 +106,6 @@ export default function ListeningIndexScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

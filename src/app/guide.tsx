@@ -1,25 +1,23 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { GUIDE_SECTIONS } from '@/data/guide';
 
 export default function GuideScreen() {
   const router = useRouter();
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/mypage' as never))}
-            style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← 戻る</ThemedText>
-          </Pressable>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <BackLink label="← 戻る" fallbackHref="/mypage" />
           <ThemedText type="subtitle">TOEIC ガイド</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             はじめてTOEICを受ける人向けに、試験の全体像と各Partの形式・攻略ポイントをまとめました。
@@ -62,24 +60,6 @@ export default function GuideScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
   header: {
     marginTop: Spacing.two,
     lineHeight: 22,

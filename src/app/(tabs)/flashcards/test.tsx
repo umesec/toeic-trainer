@@ -1,18 +1,19 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Word } from '@/data/types';
 import { WORDS } from '@/data/words';
 import { newCardState, review, todayStr } from '@/lib/srs';
-import { bumpDaily, loadProgress, recordStudy, saveProgress, type ProgressMap } from '@/lib/storage';
+import { bumpStudy, loadProgress, saveProgress, type ProgressMap } from '@/lib/storage';
 import { shuffle } from '@/lib/util';
 
 const SESSION_SIZE = 10;
@@ -38,7 +39,6 @@ function buildQuestion(word: Word, pool: Word[], mode: Mode): TestQuestion {
 }
 
 export default function WordTestScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const today = todayStr();
   const [mode, setMode] = useState<Mode>('e2j');
@@ -73,8 +73,7 @@ export default function WordTestScreen() {
     const updated = { ...progress, [question.word.id]: review(state, correct ? 'good' : 'again', today) };
     setProgress(updated);
     saveProgress(updated);
-    bumpDaily(today, 'cards');
-    recordStudy(today);
+    bumpStudy('cards', today);
   };
 
   const next = () => {
@@ -85,12 +84,10 @@ export default function WordTestScreen() {
   const finished = session !== null && index >= session.length;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← 単語カードに戻る</ThemedText>
-          </Pressable>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <BackLink label="← 単語カードに戻る" fallbackHref="/flashcards" />
           <ThemedText type="subtitle">単語テスト</ThemedText>
 
           {session === null && (
@@ -142,7 +139,7 @@ export default function WordTestScreen() {
                         styles.choice,
                         showCorrect && [styles.choiceMark, { borderColor: theme.success }],
                         showWrong && [styles.choiceMark, { borderColor: theme.danger }],
-                        pressed && !done && styles.pressed,
+                        pressed && !done && screenStyles.pressed,
                       ]}>
                       <ThemedView
                         type="backgroundElement"
@@ -200,21 +197,6 @@ export default function WordTestScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   chipRow: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -250,8 +232,5 @@ const styles = StyleSheet.create({
   resultButtons: {
     flexDirection: 'row',
     gap: Spacing.two,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

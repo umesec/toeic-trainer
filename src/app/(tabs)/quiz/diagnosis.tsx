@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { PART2_ITEMS } from '@/data/part2';
 import { PART7_SETS } from '@/data/part7';
@@ -120,12 +122,10 @@ export default function DiagnosisScreen() {
 
   if (phase === 'intro') {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedText type="linkPrimary">← 戻る</ThemedText>
-            </Pressable>
+      <ThemedView style={screenStyles.container}>
+        <SafeAreaView style={screenStyles.safeArea}>
+          <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+            <BackLink label="← 戻る" fallbackHref="/quiz" />
             <ThemedText type="subtitle">🎯 診断テスト</ThemedText>
             <Card>
               <ThemedText type="smallBold">今の実力を測って最短ルートを見つけよう</ThemedText>
@@ -152,9 +152,9 @@ export default function DiagnosisScreen() {
   if (phase === 'part2' && plan) {
     const item = plan.p2[p2idx];
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ThemedView style={screenStyles.container}>
+        <SafeAreaView style={screenStyles.safeArea}>
+          <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
             <ThemedText type="small" themeColor="textSecondary">
               診断 — Part 2　{p2idx + 1} / {P2_COUNT}
             </ThemedText>
@@ -171,7 +171,7 @@ export default function DiagnosisScreen() {
                     styles.choice,
                     picked2 !== null && i === item.answer && [styles.choiceJudged, { borderColor: theme.success }],
                     picked2 !== null && picked2 === i && i !== item.answer && [styles.choiceJudged, { borderColor: theme.danger }],
-                    pressed && picked2 === null && styles.pressed,
+                    pressed && picked2 === null && screenStyles.pressed,
                   ]}>
                   <ThemedView
                     type="backgroundElement"
@@ -194,9 +194,9 @@ export default function DiagnosisScreen() {
   if (phase === 'part5' && plan) {
     const q = plan.p5[p5idx];
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ThemedView style={screenStyles.container}>
+        <SafeAreaView style={screenStyles.safeArea}>
+          <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
             <ThemedText type="small" themeColor="textSecondary">
               診断 — Part 5　{p5idx + 1} / {P5_COUNT}
             </ThemedText>
@@ -212,7 +212,7 @@ export default function DiagnosisScreen() {
                     styles.choice,
                     picked5 !== null && i === q.answer && [styles.choiceJudged, { borderColor: theme.success }],
                     picked5 !== null && picked5 === i && i !== q.answer && [styles.choiceJudged, { borderColor: theme.danger }],
-                    pressed && picked5 === null && styles.pressed,
+                    pressed && picked5 === null && screenStyles.pressed,
                   ]}>
                   <ThemedView
                     type="backgroundElement"
@@ -237,9 +237,9 @@ export default function DiagnosisScreen() {
     const passage = set.passages[0];
     const allAnswered = p7answers.every((a) => a !== null);
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ThemedView style={screenStyles.container}>
+        <SafeAreaView style={screenStyles.safeArea}>
+          <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
             <ThemedText type="small" themeColor="textSecondary">
               診断 — Part 7　長文読解（{set.questions.length}問）
             </ThemedText>
@@ -263,7 +263,7 @@ export default function DiagnosisScreen() {
                       }}
                       style={({ pressed }) => [
                         styles.choice,
-                        pressed && picked === null && styles.pressed,
+                        pressed && picked === null && screenStyles.pressed,
                         picked !== null && [styles.choiceJudged, { borderColor: ci === picked ? theme.accent : 'transparent' }],
                       ]}>
                       <ThemedView
@@ -288,9 +288,9 @@ export default function DiagnosisScreen() {
     const est = estimateScore(l, lTotal, r, rTotal);
     const rec = recommendTarget(est.total);
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ThemedView style={screenStyles.container}>
+        <SafeAreaView style={screenStyles.safeArea}>
+          <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
             <ThemedText type="subtitle">診断結果</ThemedText>
 
             <Card style={styles.scoreCard}>
@@ -336,10 +336,6 @@ export default function DiagnosisScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.four },
-  scroll: { paddingTop: TopContentInset, paddingBottom: BottomTabInset + Spacing.four, gap: Spacing.three },
-  pressed: { opacity: 0.6 },
   choices: { gap: Spacing.two },
   choice: { borderRadius: Spacing.two },
   choiceInner: {

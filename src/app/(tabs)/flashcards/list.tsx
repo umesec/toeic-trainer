@@ -1,11 +1,12 @@
-import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { SpeakButton } from '@/components/speak-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { screenStyles } from '@/constants/screen-styles';
 import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
@@ -36,7 +37,6 @@ function statusOf(state: CardState | undefined, today: string): { label: string;
 }
 
 export default function WordListScreen() {
-  const router = useRouter();
   const theme = useTheme();
   const today = todayStr();
 
@@ -112,7 +112,7 @@ export default function WordListScreen() {
           {row.custom && (
             <Pressable
               onPress={() => deleteCustom(row.id)}
-              style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.iconButton, pressed && screenStyles.pressed]}>
               <ThemedText type="default">🗑</ThemedText>
             </Pressable>
           )}
@@ -124,11 +124,9 @@ export default function WordListScreen() {
   );
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={screenStyles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-          <ThemedText type="linkPrimary">← 単語カードに戻る</ThemedText>
-        </Pressable>
+        <BackLink label="← 単語カードに戻る" fallbackHref="/flashcards" />
         <ThemedText type="subtitle">単語一覧</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           全 {rows.length} 語 ・ 定着 {masteredCount} 語
@@ -162,11 +160,6 @@ export default function WordListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
@@ -204,8 +197,5 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: Spacing.one,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

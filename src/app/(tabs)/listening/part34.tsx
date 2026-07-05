@@ -1,28 +1,28 @@
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { LISTENING_SETS } from '@/data/part34';
 import type { ListeningSet } from '@/data/types';
 import { setQuestionId } from '@/lib/mistakes';
 import { accentForId, pitchForSpeaker, speakLines, stopSpeech } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordMistake, recordStudy } from '@/lib/storage';
+import { bumpStudy, recordMistake } from '@/lib/storage';
 
 export default function Part34Screen() {
-  const router = useRouter();
   const [current, setCurrent] = useState<ListeningSet | null>(null);
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           {current ? (
             <SetPlayer
               set={current}
@@ -33,9 +33,7 @@ export default function Part34Screen() {
             />
           ) : (
             <>
-              <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-                <ThemedText type="linkPrimary">← リスニングの一覧に戻る</ThemedText>
-              </Pressable>
+              <BackLink label="← リスニングの一覧に戻る" fallbackHref="/listening" />
               <ThemedText type="subtitle">Part 3/4 会話・トーク</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 会話（Part 3）やアナウンス・トーク（Part 4）を聞いて、3つの設問に答える本番形式の練習です。まず音声だけで解き、答え合わせでスクリプトと訳を確認しましょう。
@@ -44,7 +42,7 @@ export default function Part34Screen() {
                 <Pressable
                   key={set.id}
                   onPress={() => setCurrent(set)}
-                  style={({ pressed }) => pressed && styles.pressed}>
+                  style={({ pressed }) => pressed && screenStyles.pressed}>
                   <Card>
                     <View style={styles.cardHeader}>
                       <ThemedText type="smallBold">
@@ -76,8 +74,7 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
   // セットを開いたら「今日のリスニング学習」としてカウント
   useEffect(() => {
     const today = todayStr();
-    bumpDaily(today, 'listening');
-    recordStudy(today);
+    bumpStudy('listening', today);
   }, []);
 
   const play = (slow = false) => {
@@ -92,7 +89,7 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
 
   return (
     <>
-      <Pressable onPress={onBack} style={({ pressed }) => pressed && styles.pressed}>
+      <Pressable onPress={onBack} style={({ pressed }) => pressed && screenStyles.pressed}>
         <ThemedText type="linkPrimary">← セット一覧に戻る</ThemedText>
       </Pressable>
       <ThemedText type="subtitle">
@@ -135,7 +132,7 @@ function SetPlayer({ set, onBack }: { set: ListeningSet; onBack: () => void }) {
                     styles.choice,
                     showCorrect && [styles.choiceMark, { borderColor: theme.success }],
                     showWrong && [styles.choiceMark, { borderColor: theme.danger }],
-                    pressed && !done && styles.pressed,
+                    pressed && !done && screenStyles.pressed,
                   ]}>
                   <ThemedView
                     type="backgroundElement"
@@ -235,21 +232,6 @@ const chartStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -269,8 +251,5 @@ const styles = StyleSheet.create({
   },
   choiceMark: {
     borderWidth: 2,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

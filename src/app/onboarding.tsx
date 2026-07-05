@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { saveOnboardingDone } from '@/lib/storage';
 
@@ -52,9 +53,9 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           {/* ヒーロー */}
           <View style={[styles.hero, { backgroundColor: theme.accent }]}>
             <ThemedText type="title" style={styles.heroText}>TOEIC トレーナー</ThemedText>
@@ -100,9 +101,6 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.four },
-  scroll: { paddingTop: TopContentInset, paddingBottom: BottomTabInset + Spacing.four, gap: Spacing.three },
   hero: {
     borderRadius: Radius.lg,
     padding: Spacing.four,

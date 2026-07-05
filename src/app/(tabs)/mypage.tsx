@@ -6,12 +6,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ACHIEVEMENTS } from '@/lib/achievements';
 import { Icon, type IconName } from '@/components/icon';
 import { ProgressBar } from '@/components/progress-bar';
+import { screenStyles } from '@/constants/screen-styles';
 import { SettingsModal } from '@/components/settings-modal';
 import { StatsContent } from '@/components/stats-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopContentInset } from '@/constants/theme';
+import { Radius, Spacing, TopContentInset } from '@/constants/theme';
 import { useShadows, useTheme } from '@/hooks/use-theme';
 import { WORDS } from '@/data/words';
 import { addDays, classifyWordCounts, todayStr, type WordMasteryCounts } from '@/lib/srs';
@@ -99,15 +100,15 @@ export default function MyPageScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.titleRow}>
             <ThemedText type="subtitle">マイページ</ThemedText>
             <Pressable
               onPress={() => setShowMenu(true)}
               accessibilityLabel="メニューを開く"
-              style={({ pressed }) => pressed && styles.pressed}>
+              style={({ pressed }) => pressed && screenStyles.pressed}>
               <ThemedView type="backgroundElement" style={[styles.menuButton, shadows.card]}>
                 <ThemedText style={styles.menuIcon}>☰</ThemedText>
               </ThemedView>
@@ -238,7 +239,7 @@ export default function MyPageScreen() {
 function MenuItem({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   const theme = useTheme();
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.menuItem, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.menuItem, pressed && screenStyles.pressed]}>
       <Icon name={icon} size={18} color={theme.text} />
       <ThemedText type="smallBold">{label}</ThemedText>
     </Pressable>
@@ -270,21 +271,6 @@ function MasteryStat({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -383,8 +369,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 13,
     textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

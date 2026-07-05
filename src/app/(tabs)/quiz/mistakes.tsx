@@ -1,12 +1,13 @@
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { resolveMistake, type ResolvedMistake } from '@/lib/mistakes';
 import { speak } from '@/lib/speech';
@@ -31,7 +32,6 @@ interface NoteItem {
 type ViewFilter = 'all' | 'due';
 
 export default function MistakesScreen() {
-  const router = useRouter();
   const today = todayStr();
   const [items, setItems] = useState<NoteItem[]>([]);
   const [srsMap, setSrsMap] = useState<MistakeSrsMap>({});
@@ -89,12 +89,10 @@ export default function MistakesScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← 戻る</ThemedText>
-          </Pressable>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <BackLink label="← 戻る" fallbackHref="/quiz" />
           <ThemedText type="subtitle">📓 間違いノート</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             クイズ・練習・模試で間違えた問題が自動で集まります。解き直して正解するとノートから外れます。
@@ -183,7 +181,7 @@ function MistakeCard({
 
   return (
     <Card>
-      <Pressable onPress={onToggle} style={({ pressed }) => pressed && styles.pressed}>
+      <Pressable onPress={onToggle} style={({ pressed }) => pressed && screenStyles.pressed}>
         <View style={styles.cardHeader}>
           <ThemedText type="smallBold">{resolved.header}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
@@ -223,7 +221,7 @@ function MistakeCard({
                   styles.choice,
                   done && isAnswer && [styles.choiceJudged, { borderColor: theme.success }],
                   done && isPicked && !isAnswer && [styles.choiceJudged, { borderColor: theme.danger }],
-                  pressed && !done && styles.pressed,
+                  pressed && !done && screenStyles.pressed,
                 ]}>
                 <ThemedView
                   type="backgroundElement"
@@ -267,21 +265,6 @@ function MistakeCard({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -315,8 +298,5 @@ const styles = StyleSheet.create({
   // 正誤の色（success/danger）は render 時にテーマから適用する
   choiceJudged: {
     borderWidth: 2,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

@@ -1,22 +1,23 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { BackLink } from '@/components/back-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { SOUND_CHANGE_RULES } from '@/data/soundChanges';
 import type { SoundChangeExample } from '@/data/types';
 import { speak } from '@/lib/speech';
 import { todayStr } from '@/lib/srs';
-import { bumpDaily, recordStudy } from '@/lib/storage';
+import { bumpStudy } from '@/lib/storage';
 import { splitByFocus } from '@/lib/util';
 
 export default function SoundChangeRuleScreen() {
-  const router = useRouter();
   const { rule: ruleId } = useLocalSearchParams<{ rule: string }>();
   const rule = SOUND_CHANGE_RULES.find((r) => r.id === ruleId);
 
@@ -24,30 +25,25 @@ export default function SoundChangeRuleScreen() {
     if (!rule) return;
     // ルール詳細を開いたら「今日のリスニング学習」としてカウント
     const today = todayStr();
-    bumpDaily(today, 'listening');
-    recordStudy(today);
+    bumpStudy('listening', today);
   }, [rule]);
 
   if (!rule) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={screenStyles.container}>
+        <SafeAreaView style={screenStyles.safeArea}>
           <ThemedText type="default">ルールが見つかりませんでした。</ThemedText>
-          <Pressable onPress={() => router.back()}>
-            <ThemedText type="linkPrimary">← 一覧に戻る</ThemedText>
-          </Pressable>
+          <BackLink label="← 一覧に戻る" fallbackHref="/listening" />
         </SafeAreaView>
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => pressed && styles.pressed}>
-            <ThemedText type="linkPrimary">← 音声変化の一覧に戻る</ThemedText>
-          </Pressable>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <BackLink label="← 音声変化の一覧に戻る" fallbackHref="/listening" />
 
           <ThemedText type="subtitle">
             {rule.name}{' '}
@@ -107,28 +103,13 @@ function ExampleRow({ example }: { example: SoundChangeExample }) {
 
 function PlayButton({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.playButton, pressed && styles.pressed]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.playButton, pressed && screenStyles.pressed]}>
       <ThemedText type="default">{label}</ThemedText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   exampleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -148,8 +129,5 @@ const styles = StyleSheet.create({
   },
   playButton: {
     padding: Spacing.one,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

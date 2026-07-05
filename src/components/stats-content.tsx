@@ -7,7 +7,8 @@ import { ThemedText } from '@/components/themed-text';
 import { AppButton, Card } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { addDays, todayStr } from '@/lib/srs';
+import { buildDailyChart, buildScoreChart } from '@/lib/charts';
+import { todayStr } from '@/lib/srs';
 import {
   loadDailyLogMap,
   loadMockHistory,
@@ -52,24 +53,8 @@ export function StatsContent() {
     ]);
     setPartStats(ps);
     setTagStats(ts);
-
-    const days: BarDatum[] = [];
-    for (let i = 13; i >= 0; i--) {
-      const date = addDays(today, -i);
-      const d = logMap[date];
-      days.push({
-        label: date.slice(5).replace('-', '/'),
-        value: d ? d.cards + d.quiz + d.listening + (d.reading ?? 0) : 0,
-      });
-    }
-    setDailyChart(days);
-
-    setScoreChart(
-      mockHistory
-        .filter((h) => h.estimatedTotal !== undefined)
-        .slice(-10)
-        .map((h) => ({ label: h.date.slice(5).replace('-', '/'), value: h.estimatedTotal! }))
-    );
+    setDailyChart(buildDailyChart(logMap, today));
+    setScoreChart(buildScoreChart(mockHistory));
   }, [today]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));

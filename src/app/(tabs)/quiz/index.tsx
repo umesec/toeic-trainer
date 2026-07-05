@@ -6,20 +6,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card, Chip } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { QUIZZES } from '@/data/quizzes';
 import { useFeatureColors, useTheme } from '@/hooks/use-theme';
 import type { QuizQuestion, QuizTag } from '@/data/types';
 import { todayStr } from '@/lib/srs';
 import {
-  bumpDaily,
+  bumpStudy,
   loadQuizStats,
   loadTagStats,
   loadWrongIds,
   recordMistake,
   recordPaceAnswer,
   recordPartAnswer,
-  recordStudy,
   recordTagAnswer,
   saveQuizStats,
   saveWrongIds,
@@ -102,8 +102,7 @@ export default function QuizScreen() {
     sessionMsRef.current += answerMs;
     recordPaceAnswer('part5', answerMs);
     if (!correct) recordMistake('part5', question.id, today);
-    bumpDaily(today, 'quiz');
-    recordStudy(today);
+    bumpStudy('quiz', today);
   };
 
   const next = async () => {
@@ -120,9 +119,9 @@ export default function QuizScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
           <ThemedText type="subtitle">文法・語彙クイズ</ThemedText>
 
           {phase === 'setup' && (
@@ -198,7 +197,7 @@ export default function QuizScreen() {
                         styles.choice,
                         answered && isAnswer && [styles.choiceJudged, { borderColor: theme.success }],
                         answered && isPicked && !isAnswer && [styles.choiceJudged, { borderColor: theme.danger }],
-                        pressed && !answered && styles.pressed,
+                        pressed && !answered && screenStyles.pressed,
                       ]}>
                       <ThemedView
                         type="backgroundElement"
@@ -317,11 +316,6 @@ function WeaknessCard({ tagStats }: { tagStats: TagStatsMap }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -346,16 +340,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-  },
-  scroll: {
-    paddingTop: TopContentInset,
-    paddingBottom: BottomTabInset + Spacing.four,
-    gap: Spacing.three,
-  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -375,9 +359,6 @@ const styles = StyleSheet.create({
   // 正誤の色（success/danger）は render 時にテーマから適用する
   choiceJudged: {
     borderWidth: 2,
-  },
-  pressed: {
-    opacity: 0.6,
   },
   resultCard: {
     alignItems: 'center',

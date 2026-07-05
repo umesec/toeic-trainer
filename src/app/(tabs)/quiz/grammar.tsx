@@ -6,7 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AppButton, Card } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopContentInset } from '@/constants/theme';
+import { screenStyles } from '@/constants/screen-styles';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface GrammarRule {
@@ -211,10 +212,10 @@ export default function GrammarScreen() {
   const rule = GRAMMAR_RULES.find((r) => r.tag === selected);
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => (selected ? setSelected(null) : router.back())} style={({ pressed }) => pressed && styles.pressed}>
+    <ThemedView style={screenStyles.container}>
+      <SafeAreaView style={screenStyles.safeArea}>
+        <ScrollView contentContainerStyle={screenStyles.scroll} showsVerticalScrollIndicator={false}>
+          <Pressable onPress={() => (selected ? setSelected(null) : router.back())} style={({ pressed }) => pressed && screenStyles.pressed}>
             <ThemedText type="linkPrimary">← {selected ? 'カテゴリ一覧に戻る' : '戻る'}</ThemedText>
           </Pressable>
           <ThemedText type="subtitle">文法ルール解説</ThemedText>
@@ -225,7 +226,7 @@ export default function GrammarScreen() {
                 カテゴリを選ぶと解説・例文・攻略ポイントが表示されます。
               </ThemedText>
               {GRAMMAR_RULES.map((r) => (
-                <Pressable key={r.tag} onPress={() => setSelected(r.tag)} style={({ pressed }) => pressed && styles.pressed}>
+                <Pressable key={r.tag} onPress={() => setSelected(r.tag)} style={({ pressed }) => pressed && screenStyles.pressed}>
                   <Card style={styles.categoryCard}>
                     <View style={{ flex: 1, gap: Spacing.half }}>
                       <ThemedText type="smallBold">{r.title}</ThemedText>
@@ -278,10 +279,6 @@ export default function GrammarScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, paddingHorizontal: Spacing.four },
-  scroll: { paddingTop: TopContentInset, paddingBottom: BottomTabInset + Spacing.four, gap: Spacing.three },
-  pressed: { opacity: 0.6 },
   categoryCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   exampleBox: { borderRadius: Spacing.two, padding: Spacing.two + 2, gap: Spacing.one, marginTop: Spacing.one },
 });
